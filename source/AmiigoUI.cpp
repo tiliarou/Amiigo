@@ -2,7 +2,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL_image.h>
 #include <string>
-#include <nfpemu.h>
+#include <emuiibo.hpp>
 #include <vector>
 #include <dirent.h>
 #include <UI.h>
@@ -109,19 +109,15 @@ void AmiigoUI::GetInput()
 						else if (Event->jbutton.button == 2)
 						{
                             //Get info about the current status
-							NfpEmuEmulationStatus CurrentStatus;
-							nfpemuGetStatus(&CurrentStatus);
+							auto CurrentStatus = emu::GetEmulationStatus();
 							//Change Emuiibo status
 							switch(CurrentStatus)
 							{
-								case 0:
-								nfpemuSetEmulationOff();
+								case emu::EmulationStatus::On:
+								emu::SetEmulationStatus(emu::EmulationStatus::Off);
 								break;
-								case 1:
-								nfpemuSetEmulationOnForever();
-								break;
-								case 2:
-								nfpemuSetEmulationOnOnce();
+								case emu::EmulationStatus::Off:
+								emu::SetEmulationStatus(emu::EmulationStatus::On);
 								break;
 							}
 
@@ -129,7 +125,7 @@ void AmiigoUI::GetInput()
 						//Y pressed
 						else if(Event->jbutton.button == 3)
 						{
-							nfpemuMoveToNextAmiibo();
+//							nfpemuMoveToNextAmiibo();
 							dctut = 1;//reload signal for the image
 						}
 						//Up pressed
@@ -242,7 +238,9 @@ void AmiigoUI::DrawHeader()
 	//Get the Amiibo path
 	char CurrentAmiibo[FS_MAX_PATH] = {0};
 	string HeaderText = "";
-	nfpemuGetCurrentAmiibo(CurrentAmiibo);
+//	nfpemuGetCurrentAmiibo(CurrentAmiibo);
+	size_t out_path_size = 0;
+	emu::GetVirtualAmiiboDirectory(CurrentAmiibo,out_path_size);
 	//String is empty so we need to set it to something so SDL doesn't crash
 	if(CurrentAmiibo[0] == NULL)
 	{
@@ -254,10 +252,10 @@ void AmiigoUI::DrawHeader()
 		//get amiibo id
 		string AmiiboID;
 		string IDContents;
-		ifstream IDReader(std::string(CurrentAmiibo) +"/model.json");
-		if(!IDReader) HeaderText = "Missing model json!";
+		ifstream IDReader(std::string(CurrentAmiibo) +"/amiibo.json");
+		if(!IDReader) HeaderText = "Missing amiibo json!";
 		else //Else get the amiibo name from the json
-		{
+		{/*
 			if(dctut > 0)//load image triger
 			{
 				//Read each line
@@ -283,7 +281,7 @@ void AmiigoUI::DrawHeader()
 						printf("Image %s.png loaded OK\n",AmiiboID.c_str());
 									
 				}else AIcon = NULL;//empty icon
-			}
+			}*/
 		}
 		
 		//Append the register path to the current amiibo var
@@ -330,7 +328,7 @@ void AmiigoUI::DrawHeader()
 	//Switch to next Amiibo
 	if(CheckButtonPressed(&HeaderRect, TouchX, TouchY))
 	{
-		nfpemuMoveToNextAmiibo();
+//		nfpemuMoveToNextAmiibo();
 		dctut = 1;//reload signal for the image
 	}
 }
@@ -338,34 +336,34 @@ void AmiigoUI::DrawHeader()
 void AmiigoUI::DrawFooter()
 {
 	//Get info about the current status
-	NfpEmuEmulationStatus CurrentStatus = (NfpEmuEmulationStatus)3;
-	nfpemuGetStatus(&CurrentStatus);
+	auto CurrentStatus = emu::GetEmulationStatus();
+	
 	//Draw the footer
 	int FooterYOffset = *Height - FooterHeight;
 	SDL_Rect FooterRect = {0,FooterYOffset, *Width, FooterHeight};
 	string StatusText = "";
 	switch(CurrentStatus)
 	{
-		case 0:
+		case emu::EmulationStatus::On:
 		StatusText = "On";
 		DrawJsonColorConfig(renderer, "AmiigoUI_DrawFooter_0");
 		break;
-		case 1:
+/*		case 1:
 		DrawJsonColorConfig(renderer, "AmiigoUI_DrawFooter_1");
 		StatusText = "Temporary on";
 		break;
-		case 2:
+*/		case emu::EmulationStatus::Off:
 		DrawJsonColorConfig(renderer, "AmiigoUI_DrawFooter_2");
 		StatusText = "Off";
 		break;
-		case 3:
+/*		case 3:
 		DrawJsonColorConfig(renderer, "AmiigoUI_DrawFooter_3");
 		StatusText = "Emuiibo not loaded";
 		break;
 		default:
 		DrawJsonColorConfig(renderer, "AmiigoUI_DrawFooter_D");
 		StatusText = "Internal error";
-		break;
+		break;*/
 	}
 	
 	//Footer was pressed so we should change the status
@@ -373,18 +371,15 @@ void AmiigoUI::DrawFooter()
 	{
 		switch(CurrentStatus)
 		{
-			case 0:
-			nfpemuSetEmulationOff();
+			case emu::EmulationStatus::On:
+			emu::SetEmulationStatus(emu::EmulationStatus::Off);
 			break;
-			case 1:
-			nfpemuSetEmulationOnForever();
-			break;
-			case 2:
-			nfpemuSetEmulationOnOnce();
+			case emu::EmulationStatus::Off:
+			emu::SetEmulationStatus(emu::EmulationStatus::On);
 			break;
 		}
 	}
-	
+
 	SDL_RenderFillRect(renderer, &FooterRect);
 	
 	//Draw the status text
@@ -458,7 +453,7 @@ void AmiigoUI::SetAmiibo(int Index)
 	strcat(PathToAmiibo, Files.at(Index).d_name);
 	//Check if Amiibo or empty folder
 	string TagPath = PathToAmiibo;
-	TagPath += "/tag.json";
+	TagPath += "/amiibo.json";
 	if(!CheckFileExists(TagPath))
 	{
 		ListDir = PathToAmiibo;
@@ -467,7 +462,9 @@ void AmiigoUI::SetAmiibo(int Index)
 	}
 	else 
 	{
-		nfpemuSetCustomAmiibo(PathToAmiibo);
+		
+		emu::SetActiveVirtualAmiibo(PathToAmiibo, 8);
+//		nfpemuSetCustomAmiibo(PathToAmiibo);
 		dctut = 1;//reload signal for the image
 	}
 }

@@ -3,3 +3,5 @@ build/*
 *.nacp
 *.elf
 *.nso
+trash/*
+libnx/*

@@ -10,7 +10,7 @@
 #include <AmiigoUI.h>
 #include <CreatorUI.h>
 #include <UpdaterUI.h>
-#include <nfpemu.h>
+#include <emuiibo.hpp>
 #include <thread>
 #include <Utils.h>
 int destroyer = 0;
@@ -71,8 +71,9 @@ first = std::thread(APIDownloader);
 
 	TTF_Init(); //Init the font
 	plInitialize(); //Init needed for shared font
-	if (nfpemuIsAccessible())
-	nfpemuInitialize(); //Init nfp ipc
+	if (emu::IsAvailable())
+//	nfpemuInitialize(); //Init nfp ipc
+	emu::Initialize();//same
 	
 	//Give MainUI access to vars
 	AmiigoUI *MainUI = new AmiigoUI();
@@ -183,7 +184,7 @@ first = std::thread(APIDownloader);
 	socketExit();
 	nifmExit();
 	plExit();
-	nfpemuExit();
+//	nfpemuExit();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
