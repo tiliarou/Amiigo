@@ -88,6 +88,24 @@ bool HasConnection()
 
 void Scandownload(string folder)
 {
+	
+			//get API
+			string APIContents;
+			json APIJSData;
+			ifstream IDReader("sdmc:/config/amiigo/API.json");
+				//Read each line
+				for(int i = 0; !IDReader.eof(); i++)
+				{
+					string TempLine = "";
+					getline(IDReader, TempLine);
+					APIContents += TempLine;
+				}
+			IDReader.close();
+			if(json::accept(APIContents))
+			{
+				APIJSData = json::parse(APIContents);
+			}
+	
 	//Do the actual scanning
 	DIR* dir;
 	struct dirent* ent;
@@ -97,13 +115,13 @@ void Scandownload(string folder)
 		if (destroyer != 0) break;
 		string route = ent->d_name;
 		//Check if Amiibo or empty folder
-		if(CheckFileExists(folder+"/"+route+"/model.json"))
+		if(CheckFileExists(folder+"/"+route+"/amiibo.json"))
 		{
 			//get amiibo id
-			string AmiiboID;
+			int NUM;
 			string IDContents;
 			json JEData;
-			ifstream IDReader(folder+"/"+route+"/model.json");
+			ifstream IDReader(folder+"/"+route+"/amiibo.json");
 				//Read each line
 				for(int i = 0; !IDReader.eof(); i++)
 				{
@@ -115,20 +133,19 @@ void Scandownload(string folder)
 			if(json::accept(IDContents))
 			{
 				JEData = json::parse(IDContents);
-				AmiiboID = JEData["amiiboId"].get<std::string>();
-				std::transform(AmiiboID.begin(),AmiiboID.end(),AmiiboID.begin(),::tolower);
+				NUM = JEData["id"]["model_number"].get<int>();
 			}
 					
-			string imageI = "sdmc:/config/amiigo/IMG/"+AmiiboID+".png";
-			string imageF = "sdmc:/config/amiigo/IMG/Cache/"+AmiiboID+".png";
+			string imageI = folder+"/"+route+"/Aicon.png";
+			string imageF = folder+"/"+route+"/Aicon_cache.png";
 			if(!CheckFileExists(imageI))
 			{//download icon	
-				string url = "https://raw.githubusercontent.com/N3evin/AmiiboAPI/master/images/icon_"+ AmiiboID.substr(0,8)+"-"+AmiiboID.substr(8,8) +".png";
+				string url = APIJSData["amiibo"][NUM]["image"].get<std::string>();
 				printf("%s - Downloading %s\nTo %s\n",route.c_str(),url.c_str(),imageI.c_str());
 				RetrieveToFile(url, imageF);
 				rename(imageF.c_str(), imageI.c_str());
 				printf("Downloaded \n");
-			}else printf("The icon exist %s.png %s OK\n",AmiiboID.c_str(),route.c_str());
+			}else printf("The icon exist %d %s OK\n",NUM,route.c_str());
 		}
 		else 
 		{
@@ -152,43 +169,11 @@ void APIDownloader()
 	remove("sdmc:/config/amiigo/API-D.json");
 
 	//download amiibo icons
-	mkdir("sdmc:/config/amiigo/IMG/", 0);
-	mkdir("sdmc:/config/amiigo/IMG/Cache/", 0);
+//	mkdir("sdmc:/config/amiigo/IMG/", 0);
+//	mkdir("sdmc:/config/amiigo/IMG/Cache/", 0);
 	printf("Icon downloader\n");
 	Scandownload("sdmc:/emuiibo/amiibo");
 	
-/*	//download full data base
-		ifstream DataFileReader("sdmc:/config/amiigo/API.json");
-		string AmiiboAPIString;
-		getline(DataFileReader, AmiiboAPIString);
-		DataFileReader.close();		
-	if(json::accept(AmiiboAPIString))
-	{
-		//Parse and use the JSON data
-		json JData;
-		int JDataSize = 0;
-		JData = json::parse(AmiiboAPIString);
-		JDataSize = JData["amiibo"].size();
-		
-		//Get all of the Series' names and add Amiibos to the AmiiboVarsVec
-		for(int i = 0; i < JDataSize; i++)
-		{
-			if (destroyer != 0) break;
-			string amiiboicon = JData["amiibo"][i]["image"].get<std::string>();
-			string amiiID = "sdmc:/config/amiigo/IMG/"+JData["amiibo"][i]["head"].get<std::string>()+JData["amiibo"][i]["tail"].get<std::string>()+".png";
-			string amiifail = "sdmc:/config/amiigo/IMG/Cache/"+JData["amiibo"][i]["head"].get<std::string>()+JData["amiibo"][i]["tail"].get<std::string>()+".png";
-			
-			if((CheckFileExists(amiiID))&(fsize(amiiID) == 0))
-			remove(amiiID.c_str());
-		
-			if(!CheckFileExists(amiiID))
-			{
-				RetrieveToFile(amiiboicon, amiifail);
-				rename(amiifail.c_str(), amiiID.c_str());
-			}
-		}
-	}
-*/
 printf("Close Thread\n");
 destroyer = 1;
 }

@@ -10,7 +10,7 @@ make -j7
 set a=%errorlevel%
 echo ------------------------------------------
 rem if %a% neq 0 color 04
-if %a% equ 0 "C:\devkitPro\tools\bin\nxlink.exe" -a %IP% %File%
+if %a% equ 0 "C:\devkitPro\tools\bin\nxlink.exe" -a %IP% %File% -s
 
 echo -----------------------------------
 

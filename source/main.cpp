@@ -14,6 +14,7 @@
 #include <thread>
 #include <Utils.h>
 int destroyer = 0;
+bool g_emuiibo_init_ok = false;
 int main(int argc, char *argv[])
 {
 socketInitializeDefault();
@@ -73,7 +74,7 @@ first = std::thread(APIDownloader);
 	plInitialize(); //Init needed for shared font
 	if (emu::IsAvailable())
 //	nfpemuInitialize(); //Init nfp ipc
-	emu::Initialize();//same
+	g_emuiibo_init_ok = R_SUCCEEDED(emu::Initialize());//same
 	
 	//Give MainUI access to vars
 	AmiigoUI *MainUI = new AmiigoUI();
