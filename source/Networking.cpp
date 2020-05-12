@@ -132,6 +132,7 @@ void Scandownload(string folder)
 		}
 		else 
 		{
+			if(!CheckFileExists(folder+"/"+route+"/tag.json"))
 			Scandownload(folder+"/"+route);
 		}
 
