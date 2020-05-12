@@ -126,6 +126,7 @@ void Scandownload(string folder)
 			{//download icon	
 				printf("%s - Downloading %s\nTo %s\n",route.c_str(),url.c_str(),imageI.c_str());
 				RetrieveToFile(url, imageF);
+				if (fsize(imageF) != 0)
 				rename(imageF.c_str(), imageI.c_str());
 				printf("Downloaded \n");
 			}else printf("The icon exist %s OK\n",route.c_str());
