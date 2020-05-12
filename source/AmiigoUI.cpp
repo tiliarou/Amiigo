@@ -240,6 +240,7 @@ void AmiigoUI::DrawHeader()
 	char CurrentAmiibo[FS_MAX_PATH];
 	string HeaderText = "";
     emu::VirtualAmiiboData g_active_amiibo_data;
+    emu::VirtualAmiiboData C_active_amiibo_data;
     emu::GetActiveVirtualAmiibo(&g_active_amiibo_data, CurrentAmiibo, FS_MAX_PATH);
 
 	//String is empty so we need to set it to something so SDL doesn't crash
@@ -257,7 +258,10 @@ void AmiigoUI::DrawHeader()
 		string FileContents = "";
 		ifstream FileReader(AmiibopathS+"/amiibo.json");
 		//If the register file doesn't exist display message. This prevents a infinate loop.
-		if(!FileReader) HeaderText = "Missing amiibo json!";
+		if(!FileReader){
+			HeaderText = "Missing amiibo json! Reboot Required";
+			emu::TryParseVirtualAmiibo(CurrentAmiibo, FS_MAX_PATH, &C_active_amiibo_data);
+		} 
 		else //Else get the amiibo name from the json
 		{
 			//Read each line
@@ -277,7 +281,7 @@ void AmiigoUI::DrawHeader()
 				if(dctut > 0)//load image triger
 				{
 					//load amiibo image
-					string imageI = AmiibopathS+"/Aicon.png";
+					string imageI = AmiibopathS+"/amiibo.png";
 					if(CheckFileExists(imageI)&(fsize(imageI) != 0))
 					{
 							dctut = 0;//set image triger off
@@ -429,12 +433,16 @@ void AmiigoUI::SetAmiibo(int Index)
 	strcat(PathToAmiibo, Files.at(Index).d_name);
 	//Check if Amiibo or empty folder
 	string TagPath = PathToAmiibo;
-	TagPath += "/amiibo.json";
-	if(!CheckFileExists(TagPath))
+	string AmiPath = PathToAmiibo;
+	TagPath += "/tag.json";
+	AmiPath += "/amiibo.json";
+	if(!CheckFileExists(AmiPath))
 	{
+		if(!CheckFileExists(TagPath)){
 		ListDir = PathToAmiibo;
 		ListDir += "/";
 		ScanForAmiibos();
+		}
 	}
 	else 
 	{

@@ -89,10 +89,10 @@ bool HasConnection()
 void Scandownload(string folder)
 {
 	
-			//get API
+			//get CAPI
 			string APIContents;
 			json APIJSData;
-			ifstream IDReader("sdmc:/config/amiigo/API.json");
+			ifstream IDReader("sdmc:/config/amiigo/CAPI.json");
 				//Read each line
 				for(int i = 0; !IDReader.eof(); i++)
 				{
@@ -104,7 +104,8 @@ void Scandownload(string folder)
 			if(json::accept(APIContents))
 			{
 				APIJSData = json::parse(APIContents);
-			}
+			}else
+				return;
 	
 	//Do the actual scanning
 	DIR* dir;
@@ -117,35 +118,17 @@ void Scandownload(string folder)
 		//Check if Amiibo or empty folder
 		if(CheckFileExists(folder+"/"+route+"/amiibo.json"))
 		{
-			//get amiibo id
-			int NUM;
-			string IDContents;
-			json JEData;
-			ifstream IDReader(folder+"/"+route+"/amiibo.json");
-				//Read each line
-				for(int i = 0; !IDReader.eof(); i++)
-				{
-					string TempLine = "";
-					getline(IDReader, TempLine);
-					IDContents += TempLine;
-				}
-			IDReader.close();
-			if(json::accept(IDContents))
-			{
-				JEData = json::parse(IDContents);
-				NUM = JEData["id"]["model_number"].get<int>();
-			}
-					
-			string imageI = folder+"/"+route+"/Aicon.png";
-			string imageF = folder+"/"+route+"/Aicon_cache.png";
+			string imageI = folder+"/"+route+"/amiibo.png";
+			string imageF = folder+"/"+route+"/amiibo_cache.png";
+			string url = APIJSData["url"].get<std::string>()+APIJSData[route]["image"].get<std::string>();
+			printf("dir %s OK\n",route.c_str());
 			if(!CheckFileExists(imageI))
 			{//download icon	
-				string url = APIJSData["amiibo"][NUM]["image"].get<std::string>();
 				printf("%s - Downloading %s\nTo %s\n",route.c_str(),url.c_str(),imageI.c_str());
 				RetrieveToFile(url, imageF);
 				rename(imageF.c_str(), imageI.c_str());
 				printf("Downloaded \n");
-			}else printf("The icon exist %d %s OK\n",NUM,route.c_str());
+			}else printf("The icon exist %s OK\n",route.c_str());
 		}
 		else 
 		{
@@ -160,18 +143,26 @@ void APIDownloader()
 	printf("Open Thread\n");
 	printf("Api Downloader\n");
 	mkdir("sdmc:/config/amiigo/", 0);
-	if(HasConnection())
+	if(HasConnection()){
 	RetrieveToFile("https://www.amiiboapi.com/api/amiibo", "sdmc:/config/amiigo/API-D.json");
-	if(CheckFileExists("sdmc:/config/amiigo/API-D.json"))
-	rename("sdmc:/config/amiigo/API.json", "sdmc:/config/amiigo/API-old.json");
-	rename("sdmc:/config/amiigo/API-D.json", "sdmc:/config/amiigo/API.json");
-	remove("sdmc:/config/amiigo/API-old.json");
-	remove("sdmc:/config/amiigo/API-D.json");
+		if(CheckFileExists("sdmc:/config/amiigo/API-D.json"))
+		rename("sdmc:/config/amiigo/API.json", "sdmc:/config/amiigo/API-old.json");
+		rename("sdmc:/config/amiigo/API-D.json", "sdmc:/config/amiigo/API.json");
+		remove("sdmc:/config/amiigo/API-old.json");
+		remove("sdmc:/config/amiigo/API-D.json");
+		
+	RetrieveToFile("http://myrincon.duckdns.org/hollow/capi.php", "sdmc:/config/amiigo/CAPI-D.json");
+		if(CheckFileExists("sdmc:/config/amiigo/CAPI-D.json"))
+		rename("sdmc:/config/amiigo/CAPI.json", "sdmc:/config/amiigo/CAPI-old.json");
+		rename("sdmc:/config/amiigo/CAPI-D.json", "sdmc:/config/amiigo/CAPI.json");
+		remove("sdmc:/config/amiigo/CAPI-old.json");
+		remove("sdmc:/config/amiigo/CAPI-D.json");
+	}
 
 	//download amiibo icons
 //	mkdir("sdmc:/config/amiigo/IMG/", 0);
 //	mkdir("sdmc:/config/amiigo/IMG/Cache/", 0);
-	printf("Icon downloader\n");
+//	printf("Icon downloader\n");
 	Scandownload("sdmc:/emuiibo/amiibo");
 	
 printf("Close Thread\n");
