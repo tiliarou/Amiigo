@@ -71,7 +71,7 @@ first = std::thread(APIDownloader);
     }
 
 	TTF_Init(); //Init the font
-	plInitialize(); //Init needed for shared font
+	plInitialize(PlServiceType_User); //Init needed for shared font
 	if (emu::IsAvailable())
 //	nfpemuInitialize(); //Init nfp ipc
 	g_emuiibo_init_ok = R_SUCCEEDED(emu::Initialize());//same
