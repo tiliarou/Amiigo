@@ -13,6 +13,8 @@
 #include "Utils.h"
 using namespace std;
 using json = nlohmann::json;
+
+
 class AmiiboVars
 {
 	public:
@@ -88,7 +90,8 @@ CreatorUI::CreatorUI()
 		AmiiboVarsVec.push_back(TempAmiiboVars);
 		
 		//Loop through every element in the vector
-		for(u32 j = 0; j < SeriesVec.size(); j++)
+		int maxSV = SeriesVec.size();
+		for(int j = 0; j < maxSV; j++)
 		{
 			//If the vector has the name we break the loop
 			if(SeriesVec.at(j) == SeriesName)
@@ -288,7 +291,8 @@ void CreatorUI::ListSelect()
 		string SelectedSeries = SeriesVec.at(SeriesList->SelectedIndex);
 		SeriesList->ListingTextVec.clear();
 		SortedAmiiboVarsVec.clear();
-		for(u32 i = 0; i < AmiiboVarsVec.size(); i++)
+		int MaxVV = AmiiboVarsVec.size();
+		for(int i = 0; i < MaxVV; i++)
 		{
 			//There's something happening here
 			//What it is ain't exactly clear
@@ -318,6 +322,7 @@ void CreatorUI::DrawHeader()
 	DrawJsonColorConfig(renderer, "CreatorUI_DrawHeader");
 	SDL_Rect HeaderRect = {0,0, *Width, HeaderHeight};
 	SDL_RenderFillRect(renderer, &HeaderRect);
+
 	//Draw the Amiibo path text
 	SDL_Surface* HeaderTextSurface = TTF_RenderUTF8_Blended_Wrapped(HeaderFont, "Amiigo Maker", TextColour, *Width);
 	SDL_Texture* HeaderTextTexture = SDL_CreateTextureFromSurface(renderer, HeaderTextSurface);
@@ -330,13 +335,12 @@ void CreatorUI::DrawHeader()
 
 void CreatorUI::GetDataFromAPI(string FilterTerm)
 {
-		while(true)//wait for the download of the api
+		for(int i = 0;i < 3;i++)//wait for the the api
 		{
 		ifstream DataFileReader("sdmc:/config/amiigo/API.json");
 		getline(DataFileReader, AmiiboAPIString);
 		DataFileReader.close();		
 		if(AmiiboAPIString.size()!=0) break;			
-		if(!HasConnection()) break;
 		}
 	if(json::accept(AmiiboAPIString))
 	{

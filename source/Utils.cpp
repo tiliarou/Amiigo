@@ -14,6 +14,7 @@
 #include "Utils.h"
 using json = nlohmann::json;
 string IDContents;
+json JEData;
 
 using namespace std;
 
@@ -75,7 +76,6 @@ void DrawJsonColorConfig(SDL_Renderer* renderer, string Head)
 {
 	if(CheckFileExists("sdmc:/config/amiigo/config.json"))
 	{
-		json JEData;
 		if (IDContents.size() == 0)
 		{
 			ifstream IDReader("sdmc:/config/amiigo/config.json");
@@ -89,21 +89,26 @@ void DrawJsonColorConfig(SDL_Renderer* renderer, string Head)
 					printf("%s\n", TempLine.c_str());
 				}
 			IDReader.close();
-		}
-			
-		if(json::accept(IDContents))
-		{
-			JEData = json::parse(IDContents);
-			int CR = std::stoi(JEData[Head+"_R"].get<std::string>());
-			int CG = std::stoi(JEData[Head+"_G"].get<std::string>());
-			int CB = std::stoi(JEData[Head+"_B"].get<std::string>());
-			int CA = std::stoi(JEData[Head+"_A"].get<std::string>());
-			SDL_SetRenderDrawColor(renderer,CR,CG,CB,CA);
+			if(json::accept(IDContents))
+			{
+				printf("Parse\n");
+				JEData = json::parse(IDContents);
+				printf("Parse OK\n");
+			}else{
+				//remove bad config
+				IDContents = "";
+				remove("sdmc:/config/amiigo/bad_config.json");
+				rename("sdmc:/config/amiigo/config.json","sdmc:/config/amiigo/bad_config.json");
+			}
 		}else{
-			//remove bad config
-			IDContents = "";
-			remove("sdmc:/config/amiigo/bad_config.json");
-			rename("sdmc:/config/amiigo/config.json","sdmc:/config/amiigo/bad_config.json");
+//		printf("%s \n",Head.c_str());
+		int CR = std::stoi(JEData[Head+"_R"].get<std::string>());
+		int	CG = std::stoi(JEData[Head+"_G"].get<std::string>());
+		int	CB = std::stoi(JEData[Head+"_B"].get<std::string>());
+		int	CA = std::stoi(JEData[Head+"_A"].get<std::string>());
+//		if (CA != 0)
+//		printf("%s %d %d %d %d\n",Head.c_str(),CR,CG,CB,CA);
+		SDL_SetRenderDrawColor(renderer,CR,CG,CB,CA);
 		}
 	}else{
 		//Default values

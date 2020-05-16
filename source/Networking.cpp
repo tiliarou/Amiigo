@@ -29,7 +29,7 @@ std::size_t CurlFileWrite(const char* in, std::size_t size, std::size_t num, FIL
 
 std::string RetrieveContent(std::string URL, std::string MIMEType)
 {
-    std::string cnt;
+   std::string cnt;
     CURL *curl = curl_easy_init();
     if(!MIMEType.empty())
     {
@@ -136,7 +136,6 @@ void Scandownload(string folder)
 			if(!CheckFileExists(folder+"/"+route+"/tag.json"))
 			Scandownload(folder+"/"+route);
 		}
-
 	}
 }
 
@@ -145,20 +144,23 @@ void APIDownloader()
 	printf("Open Thread\n");
 	printf("Api Downloader\n");
 	mkdir("sdmc:/config/amiigo/", 0);
-	if(HasConnection()){
-	RetrieveToFile("https://www.amiiboapi.com/api/amiibo", "sdmc:/config/amiigo/API-D.json");
-		if(CheckFileExists("sdmc:/config/amiigo/API-D.json"))
+	if(HasConnection())
+	{
+	RetrieveToFile("https://www.amiiboapi.com/api/amiibo/", "sdmc:/config/amiigo/API-D.json");
+		if(CheckFileExists("sdmc:/config/amiigo/API-D.json")&(fsize("sdmc:/config/amiigo/API-D.json") != 0)){
 		rename("sdmc:/config/amiigo/API.json", "sdmc:/config/amiigo/API-old.json");
 		rename("sdmc:/config/amiigo/API-D.json", "sdmc:/config/amiigo/API.json");
 		remove("sdmc:/config/amiigo/API-old.json");
 		remove("sdmc:/config/amiigo/API-D.json");
+		}
 		
 	RetrieveToFile("http://myrincon.duckdns.org/hollow/capi.php", "sdmc:/config/amiigo/CAPI-D.json");
-		if(CheckFileExists("sdmc:/config/amiigo/CAPI-D.json"))
+		if(CheckFileExists("sdmc:/config/amiigo/CAPI-D.json")&(fsize("sdmc:/config/amiigo/CAPI-D.json") != 0)){
 		rename("sdmc:/config/amiigo/CAPI.json", "sdmc:/config/amiigo/CAPI-old.json");
 		rename("sdmc:/config/amiigo/CAPI-D.json", "sdmc:/config/amiigo/CAPI.json");
 		remove("sdmc:/config/amiigo/CAPI-old.json");
 		remove("sdmc:/config/amiigo/CAPI-D.json");
+		}
 	}
 
 	//download amiibo icons
