@@ -49,6 +49,6 @@ You can also use the touch screen to select an Amiibo by tapping on a item in th
 For support please use [the offical GBATemp thread](https://gbatemp.net/threads/amiigo-emuiibo-gui.549964/) unless you are reporting a bug in which case open a issue here on GitHub.
 
 ## Screenshots
-<img src="https://raw.githubusercontent.com/CompSciOrBust/Amiigo/master/Screenshots/Screenshot_1.jpg" width="432"/> <img src="https://raw.githubusercontent.com/CompSciOrBust/Amiigo/master/Screenshots/Screenshot_2.jpg" width="432"/>
-<img src="https://raw.githubusercontent.com/CompSciOrBust/Amiigo/master/Screenshots/Screenshot_3.jpg" width="432"/> <img src="https://raw.githubusercontent.com/CompSciOrBust/Amiigo/master/Screenshots/Screenshot_4.jpg" width="432"/>
-<img src="https://raw.githubusercontent.com/CompSciOrBust/Amiigo/master/Screenshots/Screenshot_5.jpg" width="432"/> <img src="https://raw.githubusercontent.com/CompSciOrBust/Amiigo/master/Screenshots/Screenshot_6.jpg" width="432"/>
+<img src="Screenshots/Screenshot_1.jpg" width="432"/> <img src="Screenshots/Screenshot_2.jpg" width="432"/>
+<img src="Screenshots/Screenshot_3.jpg" width="432"/> <img src="Screenshots/Screenshot_4.jpg" width="432"/>
+<img src="Screenshots/Screenshot_5.jpg" width="432"/> <img src="Screenshots/Screenshot_6.jpg" width="432"/>
