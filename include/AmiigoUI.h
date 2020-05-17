@@ -4,7 +4,9 @@
 #include <vector>
 #include <dirent.h>
 #include <UI.h>
+#include "nlohmann/json.hpp"
 using namespace std;
+using json = nlohmann::json;
 
 class AmiigoUI
 {
@@ -20,11 +22,13 @@ class AmiigoUI
 	int TouchX = -1;
 	int TouchY = -1;
 	ScrollList *AmiiboList;
+	json JData;
 	public:
 	AmiigoUI();
+	void GetInput();
 	void DrawUI();
 	void ScanForAmiibos();
-	void PleaseWait();
+	void PleaseWait(string mensage);
 	void InitList();
 	void SetAmiibo(int);
 	SDL_Event *Event;
@@ -35,4 +39,5 @@ class AmiigoUI
 	int *IsDone;
 	ScrollList *MenuList;
 	int AmiiboListWidth;
+	string ListDir = "sdmc:/emuiibo/amiibo/";
 };

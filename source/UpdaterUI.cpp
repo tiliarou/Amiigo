@@ -2,9 +2,10 @@
 #include <SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <UI.h>
-#include "networking.h"
+#include "Networking.h"
 #include "nlohmann/json.hpp"
 #include <fstream>
+#include "Utils.h"
 using namespace std;
 using json = nlohmann::json;
 
@@ -18,7 +19,7 @@ class UpdaterUI
 	TTF_Font *TextFont;
 	SDL_Color TextColour = {0, 0, 0};
 	json GitAPIData;
-	string LatestID;
+	std::string LatestID;
 	public:
 	UpdaterUI();
 	void DrawUI();
@@ -28,11 +29,13 @@ class UpdaterUI
 	int *Width;
 	int *Height;
 	int *IsDone;
+	bool NewVersion;
+	std::string NROPath = "sdmc:/switch/Amiigo.nro";
 };
 
 UpdaterUI::UpdaterUI()
 {
-	nifmInitialize(); //Init nifm for connection stuff
+	nifmInitialize(NifmServiceType_User); //Init nifm for connection stuff
 	TextFont = GetSharedFont(48);
 }
 
@@ -40,8 +43,13 @@ void UpdaterUI::DrawUI()
 {
 	//Handle input
 	bool BPressed = false;
+	SDL_Rect BackFooterRect = {10,10, 960, 520};
+	int TouchX = -1;
+	int TouchY = -1;
 	while (SDL_PollEvent(Event))
 	{
+				TouchX = Event->tfinger.x * *Width;
+				TouchY = Event->tfinger.y * *Height;
 		switch (Event->type)
 		{
 			case SDL_JOYBUTTONDOWN:
@@ -71,6 +79,7 @@ void UpdaterUI::DrawUI()
 			//Check we have a connection before trying to access the network
 			if(HasConnection())
 			{
+				NewVersion = CheckForNewVersion();
 				UpdateState++;
 			}
 			else
@@ -86,7 +95,7 @@ void UpdaterUI::DrawUI()
 		//Check if newer version stage
 		case 1:
 		{
-			if(CheckForNewVersion())
+			if(NewVersion)
 			{
 				UpdateState++;
 				UpdateText = "Downloading " + LatestID + ". This might take a while.";
@@ -94,7 +103,7 @@ void UpdaterUI::DrawUI()
 			else
 			{
 				UpdateText = "Already on the latest version.";
-				if(BPressed)
+				if(BPressed||CheckButtonPressed(&BackFooterRect, TouchX, TouchY))
 				{
 					*WindowState = 0;
 				}
@@ -104,10 +113,10 @@ void UpdaterUI::DrawUI()
 		//Download update stage
 		case 2:
 		{
-			string UpdateFileURL = "https://github.com/CompSciOrBust/Amiigo/releases/download/" + LatestID + "/Amiigo.nro";
+			string UpdateFileURL = "https://github.com/Kronos2308/Amiigo/releases/download/" + LatestID + "/Amiigo.nro";
 			RetrieveToFile(UpdateFileURL, "sdmc:/switch/Failed_Amiigo_Update.nro");
-			remove("sdmc:/switch/Amiigo.nro");
-			rename("sdmc:/switch/Failed_Amiigo_Update.nro", "sdmc:/switch/Amiigo.nro");
+			remove(NROPath.c_str());
+			rename("sdmc:/switch/Failed_Amiigo_Update.nro", NROPath.c_str());
 			*IsDone = 1;
 		}
 		break;
@@ -128,7 +137,7 @@ void UpdaterUI::DrawUI()
 bool UpdaterUI::CheckForNewVersion()
 {
 	//Get data from GitHub API
-	string Data = RetrieveContent("https://api.github.com/repos/CompSciOrBust/Amiigo/releases", "application/json");
+	string Data = RetrieveContent("https://api.github.com/repos/Kronos2308/Amiigo/releases", "application/json");
 	//Get the release tag string from the data
 	GitAPIData = json::parse(Data);
 	//Check if GitAPI gave us a release tag otherwise we'll crash
@@ -140,13 +149,13 @@ bool UpdaterUI::CheckForNewVersion()
 	}
     LatestID = GitAPIData[0]["tag_name"].get<std::string>();
 	//Check if we're running the latest version
-	return (LatestID != APP_VERSION);
+	return (LatestID != VERSION);
 }
 
 void UpdaterUI::DrawText(std::string Message)
 {
 	//Draw the rect
-	SDL_SetRenderDrawColor(renderer, 0, 188, 212, 255);
+	DrawJsonColorConfig(renderer, "UpdaterUI_DrawText");
 	SDL_Rect MessageRect = {0,0, *Width, *Height};
 	SDL_RenderFillRect(renderer, &MessageRect);
 	//Draw the text

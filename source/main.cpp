@@ -10,9 +10,20 @@
 #include <AmiigoUI.h>
 #include <CreatorUI.h>
 #include <UpdaterUI.h>
-#include <nfpemu.h>
+#include <emuiibo.hpp>
+#include <thread>
+#include <Utils.h>
+int destroyer = 0;
+bool g_emuiibo_init_ok = false;
 int main(int argc, char *argv[])
 {
+socketInitializeDefault();
+//debug nxlink
+nxlinkStdio(); 
+printf("printf output now goes to nxlink server\n");
+std::thread  first;
+first = std::thread(APIDownloader);
+//std::thread second = std::thread(IconDownloader);
 	//Vars
     SDL_Event event;
     SDL_Window *window;
@@ -21,7 +32,6 @@ int main(int argc, char *argv[])
 	int Width = 1280;
 	int Height = 720;
 	int WindowState = 0;
-	
     // mandatory at least on switch, else gfx is not properly closed
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0) {
         SDL_Log("SDL_Init: %s\n", SDL_GetError());
@@ -61,8 +71,10 @@ int main(int argc, char *argv[])
     }
 
 	TTF_Init(); //Init the font
-	nfpemuInitialize(); //Init nfp ipc
-	plInitialize(); //Init needed for shared font
+	plInitialize(PlServiceType_User); //Init needed for shared font
+	if (emu::IsAvailable())
+//	nfpemuInitialize(); //Init nfp ipc
+	g_emuiibo_init_ok = R_SUCCEEDED(emu::Initialize());//same
 	
 	//Give MainUI access to vars
 	AmiigoUI *MainUI = new AmiigoUI();
@@ -81,7 +93,6 @@ int main(int argc, char *argv[])
 	//Not if it exists checking first feels dirty but it doesn't error out. Should we check anyway?
 	mkdir("sdmc:/emuiibo/", 0);
 	mkdir("sdmc:/emuiibo/amiibo/", 0);
-	
     while (!done)
 	{
 		//Clear the frame
@@ -92,12 +103,13 @@ int main(int argc, char *argv[])
 			//Draw the main UI
 			case 0:
 			{
+				MainUI->GetInput();
 				MainUI->DrawUI();
 				//If the user has switched to the maker UI and the data isn't read show the please wait message
-				if(AmiigoGenUI == NULL && WindowState == 1)
+				if((AmiigoGenUI == NULL) & (WindowState == 1) & (!CheckFileExists("sdmc:/config/amiigo/API.json")))
 				{
 					//Display the please wait message
-					MainUI->PleaseWait();
+					MainUI->PleaseWait("Please wait while we get data from the Amiibo API...");
 				}
 			}
 			break;
@@ -118,8 +130,10 @@ int main(int argc, char *argv[])
 					AmiigoGenUI->SeriesListWidth = MainUI->AmiiboListWidth;
 					AmiigoGenUI->InitList();
 					AmiigoGenUI->MenuList = MainUI->MenuList;
+					AmiigoGenUI->CurrentPath = &MainUI->ListDir;
 				}
 				//Render the UI
+				AmiigoGenUI->GetInput();
 				AmiigoGenUI->DrawUI();
 				//If the window state has changed then we need to rescan the amiibo folder to load the new amiibos in to the list
 				if(WindowState == 0)
@@ -141,6 +155,7 @@ int main(int argc, char *argv[])
 					UpUI->Width = &Width;
 					UpUI->Height = &Height;
 					UpUI->IsDone = &done;
+					UpUI->NROPath = argv[0];
 				}
 				UpUI->DrawUI();
 			}
@@ -152,9 +167,25 @@ int main(int argc, char *argv[])
 
 		//Draw the frame
         SDL_RenderPresent(renderer);
+		
+		//automatic join after finish	
+		if ((first.joinable())&(destroyer == 1))
+			first.join();
     }
+	
+	//join threads before exit
+	if (first.joinable())
+	{
+	destroyer = 1;
+		MainUI->PleaseWait("Please wait, Thread is Still Working on DataBase...");
+		SDL_RenderPresent(renderer);
+		first.join();
+	}
 
+	socketExit();
+	nifmExit();
 	plExit();
+//	nfpemuExit();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

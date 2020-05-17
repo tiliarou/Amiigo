@@ -44,8 +44,8 @@ DATA		:=	data
 INCLUDES	:=	include
 #ROMFS	:=	romfs
 APP_TITLE := Amiigo
-APP_AUTHOR := CompSciOrBust
-APP_VERSION := 1.4.3
+APP_AUTHOR := Kronos2308 Fork of CompSciOrBust
+APP_VERSION := 1.6.1
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -55,14 +55,14 @@ ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 			$(ARCH) $(DEFINES)
 
-CFLAGS	+=	-D__SWITCH__ $(INCLUDE) `sdl2-config --cflags`
+CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DVERSION='"$(APP_VERSION)"' -DTITLE='"$(APP_TITLE)"' `sdl2-config --cflags`
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:=	-lfreetype -lSDL2_ttf `sdl2-config --libs` `freetype-config --libs` -lcurl -lz -lmbedtls -lmbedcrypto -lmbedx509 -lnx
+LIBS	:=	-lfreetype -lSDL2_ttf -lSDL2_image `sdl2-config --libs` `freetype-config --libs` -lcurl -lz -lmbedtls -lmbedcrypto -lmbedx509 -lnx   -lSDL2_mixer -lmodplug -lmpg123 -lvorbisidec -logg  -lSDL2_gfx -lpng -ljpeg `sdl2-config --libs` `freetype-config --libs` -lcurl -lmbedtls -lmbedx509 -lmbedcrypto -lz -lnx -lopusfile -lopus -lwebp
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

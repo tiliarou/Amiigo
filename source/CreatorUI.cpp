@@ -5,13 +5,15 @@
 #include <SDL2/SDL_ttf.h>
 #include <string>
 #include "nlohmann/json.hpp"
-#include "networking.h"
+#include "Networking.h"
 #include <fstream>
 #include <dirent.h>
 #include <vector>
 #include <UI.h>
+#include "Utils.h"
 using namespace std;
 using json = nlohmann::json;
+
 
 class AmiiboVars
 {
@@ -43,8 +45,10 @@ class CreatorUI
 	vector<AmiiboVars> AmiiboVarsVec;
 	vector<AmiiboVars> SortedAmiiboVarsVec;
 	string AmiiboAPIString = "";
+	void PleaseWait(string mensage);
 	public:
 	CreatorUI();
+	void GetInput();
 	void DrawUI();
 	void GetDataFromAPI(string);
 	void InitList();
@@ -58,11 +62,12 @@ class CreatorUI
 	ScrollList *SeriesList;
 	ScrollList *MenuList;
 	int SeriesListWidth;
+	string *CurrentPath;
 };
 
 CreatorUI::CreatorUI()
 {
-	nifmInitialize(); //Init nifm for connection stuff
+	nifmInitialize(NifmServiceType_User); //Init nifm for connection stuff
 	HeaderFont = GetSharedFont(48);
 	ListFont = GetSharedFont(32);
 	//HeaderFont = TTF_OpenFont("romfs:/font.ttf", 48); //Load the header font
@@ -85,7 +90,8 @@ CreatorUI::CreatorUI()
 		AmiiboVarsVec.push_back(TempAmiiboVars);
 		
 		//Loop through every element in the vector
-		for(int j = 0; j < SeriesVec.size(); j++)
+		int maxSV = SeriesVec.size();
+		for(int j = 0; j < maxSV; j++)
 		{
 			//If the vector has the name we break the loop
 			if(SeriesVec.at(j) == SeriesName)
@@ -113,17 +119,12 @@ void CreatorUI::InitList()
 	SeriesList->ListingTextVec = SeriesVec;
 }
 
-void CreatorUI::DrawUI()
+void CreatorUI::GetInput()
 {
-	//This crashes when in the constructor for some reason
-	HeaderHeight = (*Height / 100) * 10;
-	FooterHeight = (*Height / 100) * 10;
-	ListHeight = *Height - HeaderHeight;
-	SeriesList->ListHeight = *Height - HeaderHeight - FooterHeight;
-	SeriesList->ListYOffset = HeaderHeight;
 	//Scan input
 	while (SDL_PollEvent(Event))
 		{
+			//printf("Button-ID-%d-\n",Event->jbutton.button);
             switch (Event->type)
 			{
 				//Touchscreen
@@ -144,7 +145,7 @@ void CreatorUI::DrawUI()
                             *IsDone = 1;
                         }
 						//Up pressed
-						else if(Event->jbutton.button == 13)
+						else if(Event->jbutton.button == 13||Event->jbutton.button == 17)
 						{
 							if(SeriesList->IsActive)
 							{
@@ -158,7 +159,7 @@ void CreatorUI::DrawUI()
 							}
 						}
 						//Down pressed
-						else if(Event->jbutton.button == 15)
+						else if(Event->jbutton.button == 15||Event->jbutton.button == 19)
 						{
 							if(SeriesList->IsActive)
 							{
@@ -172,7 +173,7 @@ void CreatorUI::DrawUI()
 							}
 						}
 						//Left or right pressed
-						else if(Event->jbutton.button == 12 || Event->jbutton.button == 14)
+						else if(Event->jbutton.button == 12 || Event->jbutton.button == 14|| Event->jbutton.button == 16|| Event->jbutton.button == 18)
 						{
 							MenuList->IsActive = SeriesList->IsActive;
 							SeriesList->IsActive = !SeriesList->IsActive;
@@ -203,9 +204,19 @@ void CreatorUI::DrawUI()
                     break;
             }
         }
+}
+
+void CreatorUI::DrawUI()
+{
+	//This crashes when in the constructor for some reason
+	HeaderHeight = (*Height / 100) * 10;
+	FooterHeight = (*Height / 100) * 10;
+	ListHeight = *Height - HeaderHeight;
+	SeriesList->ListHeight = *Height - HeaderHeight - FooterHeight;
+	SeriesList->ListYOffset = HeaderHeight;
 		
 	//Draw the BG
-	SDL_SetRenderDrawColor(renderer, 94, 94, 94, 255);
+	DrawJsonColorConfig(renderer, "CreatorUI_DrawUI");
 	SDL_Rect BGRect = {0,0, *Width, *Height};
 	SDL_RenderFillRect(renderer, &BGRect);
 	
@@ -239,8 +250,9 @@ void CreatorUI::ListSelect()
 	if(HasSelectedSeries)
 	{
 		int IndexInJdata = SortedAmiiboVarsVec.at(SeriesList->SelectedIndex).ListIndex;
-        string AmiiboPath = "sdmc:/emuiibo/amiibo/" + JData["amiibo"][IndexInJdata]["name"].get<std::string>();
-        mkdir(AmiiboPath.c_str(), 0);
+        string AmiiboPath = *CurrentPath + JData["amiibo"][IndexInJdata]["name"].get<std::string>();
+ 		PleaseWait("Please wait, building "+JData["amiibo"][IndexInJdata]["name"].get<std::string>()+"...");
+		mkdir(AmiiboPath.c_str(), 0);
         //Write common.json
         string FilePath = AmiiboPath + "/common.json";
         ofstream CommonFileWriter(FilePath.c_str());
@@ -261,15 +273,26 @@ void CreatorUI::ListSelect()
         ofstream RegFileWriter(FilePath.c_str());
         RegFileWriter << "{\"name\": \"" + JData["amiibo"][IndexInJdata]["name"].get<std::string>() + "\",\"firstWriteDate\": \"2019-01-01\",\"miiCharInfo\": \"mii-charinfo.bin\"}";
         RegFileWriter.close();
+		
+/*
+		//create icon
+		mkdir("sdmc:/emuiibo/cache", 0);
+		string iconname = "sdmc:/emuiibo/cache/"+JData["amiibo"][IndexInJdata]["name"].get<std::string>()+".png";
+		if(!CheckFileExists(iconname))
+		RetrieveToFile(JData["amiibo"][IndexInJdata]["image"].get<std::string>(), iconname);
+*/
 	}
 	//Add the Amiibos from the selected series to the list
 	else
 	{
+
+
 		HasSelectedSeries = true;
 		string SelectedSeries = SeriesVec.at(SeriesList->SelectedIndex);
 		SeriesList->ListingTextVec.clear();
 		SortedAmiiboVarsVec.clear();
-		for(int i = 0; i < AmiiboVarsVec.size(); i++)
+		int MaxVV = AmiiboVarsVec.size();
+		for(int i = 0; i < MaxVV; i++)
 		{
 			//There's something happening here
 			//What it is ain't exactly clear
@@ -278,7 +301,11 @@ void CreatorUI::ListSelect()
 			if(AmiiboVarsVec.at(i).AmiiboSeries == SelectedSeries)
 			{
 				SortedAmiiboVarsVec.push_back(AmiiboVarsVec.at(i));
-				SeriesList->ListingTextVec.push_back(AmiiboVarsVec.at(i).AmiiboName);
+				if(CheckFileExists(*CurrentPath + AmiiboVarsVec.at(i).AmiiboName +"/tag.json"))
+					SeriesList->ListingTextVec.push_back("* "+AmiiboVarsVec.at(i).AmiiboName);
+					else
+					SeriesList->ListingTextVec.push_back(AmiiboVarsVec.at(i).AmiiboName);
+
 				//SeriesList->ListingTextVec.push_back(SortedAmiiboVarsVec.at(SortedAmiiboVarsVec.size()-1).AmiiboName);
 			}
 		}
@@ -292,9 +319,10 @@ void CreatorUI::ListSelect()
 void CreatorUI::DrawHeader()
 {
 	//Draw the header
-	SDL_SetRenderDrawColor(renderer, 0, 188, 212, 255);
+	DrawJsonColorConfig(renderer, "CreatorUI_DrawHeader");
 	SDL_Rect HeaderRect = {0,0, *Width, HeaderHeight};
 	SDL_RenderFillRect(renderer, &HeaderRect);
+
 	//Draw the Amiibo path text
 	SDL_Surface* HeaderTextSurface = TTF_RenderUTF8_Blended_Wrapped(HeaderFont, "Amiigo Maker", TextColour, *Width);
 	SDL_Texture* HeaderTextTexture = SDL_CreateTextureFromSurface(renderer, HeaderTextSurface);
@@ -307,42 +335,20 @@ void CreatorUI::DrawHeader()
 
 void CreatorUI::GetDataFromAPI(string FilterTerm)
 {
-	bool CouldNotGetJSON = false;
-	//Make the Amiigo config dir
-	mkdir("sdmc:/config/amiigo/", 0);
-	//Check we have a connection before trying to access the network
-	if(HasConnection())
-	{
-		//Get data from the api
-		string APIURI = "https://www.amiiboapi.com/api/amiibo" + FilterTerm;
-		AmiiboAPIString = RetrieveContent(APIURI, "application/json").c_str();
-		//Check if valid json
-		if(json::accept(AmiiboAPIString))
+		for(int i = 0;i < 3;i++)//wait for the the api
 		{
-			//Save the data to the SD card in case the user wants to use it offline
-			ofstream DataFileWriter("sdmc:/config/amiigo/API.json");
-			DataFileWriter << AmiiboAPIString;
-			DataFileWriter.close();
-		}
-		else //JSON is invalid so could not get JSON
-		{
-			CouldNotGetJSON = true;
-		}
-	}
-	else //No connection so could not get JSON
-	{
-		CouldNotGetJSON = true;
-	}
-	//We couldn't get data from the Amiibo API so load the data from the SD card
-	if(CouldNotGetJSON)
-	{
 		ifstream DataFileReader("sdmc:/config/amiigo/API.json");
 		getline(DataFileReader, AmiiboAPIString);
 		DataFileReader.close();		
-	}
+		if(AmiiboAPIString.size()!=0) break;			
+		}
+	if(json::accept(AmiiboAPIString))
+	{
 	//Parse and use the JSON data
 	JData = json::parse(AmiiboAPIString);
 	JDataSize = JData["amiibo"].size();
+			
+	}
 }
 
 void CreatorUI::DrawFooter()
@@ -351,7 +357,7 @@ void CreatorUI::DrawFooter()
 	int FooterYOffset = *Height - FooterHeight;
 	SDL_Rect SelectFooterRect = {0,FooterYOffset, *Width/2, FooterHeight};
 	string FooterText = "Select";
-	SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+	DrawJsonColorConfig(renderer, "CreatorUI_DrawFooter_Select");
 	
 	//Select was pressed
 	if(CheckButtonPressed(&SelectFooterRect, TouchX, TouchY))
@@ -380,7 +386,7 @@ void CreatorUI::DrawFooter()
 	//Draw the back footer button
 	SDL_Rect BackFooterRect = {*Width/2,FooterYOffset, *Width/2, FooterHeight};
 	FooterText = "Back";
-	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+	DrawJsonColorConfig(renderer, "CreatorUI_DrawFooter_Back");
 	
 	//Back was pressed
 	if(CheckButtonPressed(&BackFooterRect, TouchX, TouchY))
@@ -403,4 +409,22 @@ void CreatorUI::DrawFooter()
 	//Clean up
 	SDL_DestroyTexture(BackTextTexture);
 	SDL_FreeSurface(BackTextSurface);
+}
+
+void CreatorUI::PleaseWait(string mensage)
+{
+	//Draw the rect
+	DrawJsonColorConfig(renderer, "CreatorUI_PleaseWait");
+	SDL_Rect MessageRect = {0,0, *Width, *Height};
+	SDL_RenderFillRect(renderer, &MessageRect);
+	//Draw the please wait text
+	SDL_Surface* MessageTextSurface = TTF_RenderUTF8_Blended_Wrapped(HeaderFont, mensage.c_str(), TextColour, *Width);
+	SDL_Texture* MessagerTextTexture = SDL_CreateTextureFromSurface(renderer, MessageTextSurface);
+	SDL_Rect HeaderTextRect = {(*Width - MessageTextSurface->w) / 2, (*Height - MessageTextSurface->h) / 2, MessageTextSurface->w, MessageTextSurface->h};
+	SDL_RenderCopy(renderer, MessagerTextTexture, NULL, &HeaderTextRect);
+	//Clean up
+	SDL_DestroyTexture(MessagerTextTexture);
+	SDL_FreeSurface(MessageTextSurface);
+
+	SDL_RenderPresent(renderer);
 }

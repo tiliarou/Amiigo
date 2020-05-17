@@ -8,3 +8,5 @@ std::string RetrieveContent(std::string URL, std::string MIMEType);
 void RetrieveToFile(std::string, std::string);
 std::string FormatURL(std::string TextToFormat);
 bool HasConnection();
+void APIDownloader();
+void Scandownload(std::string folder);

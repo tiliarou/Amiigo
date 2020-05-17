@@ -1,7 +1,17 @@
 #include <switch.h>
 #include <curl/curl.h>
 #include <string>
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <stdlib.h>
+#include <stdio.h>
+#include <AmiigoUI.h>
+#include <chrono>
+#include <thread>
+#include "Utils.h"
 
+extern int destroyer;
 //Stolen from Goldleaf
 //Thank you XOR
 std::size_t CurlStrWrite(const char* in, std::size_t size, std::size_t num, std::string* out)
@@ -19,8 +29,7 @@ std::size_t CurlFileWrite(const char* in, std::size_t size, std::size_t num, FIL
 
 std::string RetrieveContent(std::string URL, std::string MIMEType)
 {
-    socketInitializeDefault();
-    std::string cnt;
+   std::string cnt;
     CURL *curl = curl_easy_init();
     if(!MIMEType.empty())
     {
@@ -38,13 +47,11 @@ std::string RetrieveContent(std::string URL, std::string MIMEType)
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &cnt);
     curl_easy_perform(curl);
     curl_easy_cleanup(curl);
-    socketExit();
     return cnt;
 }
 
 void RetrieveToFile(std::string URL, std::string Path)
 {
-    socketInitializeDefault();
     FILE *f = fopen(Path.c_str(), "wb");
     if(f)
     {
@@ -61,7 +68,6 @@ void RetrieveToFile(std::string URL, std::string Path)
         curl_easy_cleanup(curl);
     }
     fclose(f);
-    socketExit();
 }
 
 //I made this so even though it's only one two calls it's probably janky.
@@ -75,6 +81,99 @@ std::string FormatURL(std::string TextToFormat)
 bool HasConnection()
 {
     u32 strg = 0;
+	nifmInitialize(NifmServiceType_User);
     nifmGetInternetConnectionStatus(NULL, &strg, NULL);
 	return (strg > 0);
+}
+
+void Scandownload(string folder)
+{
+	
+			//get CAPI
+			string APIContents;
+			json APIJSData;
+			ifstream IDReader("sdmc:/config/amiigo/CAPI.json");
+				//Read each line
+				for(int i = 0; !IDReader.eof(); i++)
+				{
+					string TempLine = "";
+					getline(IDReader, TempLine);
+					APIContents += TempLine;
+				}
+			IDReader.close();
+			if(json::accept(APIContents))
+			{
+				APIJSData = json::parse(APIContents);
+			}else
+				return;
+	
+	//Do the actual scanning
+	DIR* dir;
+	struct dirent* ent;
+	dir = opendir(folder.c_str());
+	while ((ent = readdir(dir)))
+	{
+		if (destroyer != 0) break;
+		string route = ent->d_name;
+		//Check if Amiibo or empty folder
+		if(CheckFileExists(folder+"/"+route+"/amiibo.json"))
+		{
+			string imageI = folder+"/"+route+"/amiibo.png";
+			string imageF = folder+"/"+route+"/amiibo_cache.png";
+			string url = APIJSData["url"].get<std::string>()+APIJSData[route]["image"].get<std::string>();
+			printf("dir %s OK\n",route.c_str());
+			if(!CheckFileExists(imageI))
+			{//download icon	
+				printf("%s - Downloading %s\nTo %s\n",route.c_str(),url.c_str(),imageI.c_str());
+				RetrieveToFile(url, imageF);
+				if (fsize(imageF) != 0)
+				rename(imageF.c_str(), imageI.c_str());
+				printf("Downloaded \n");
+			}else printf("The icon exist %s OK\n",route.c_str());
+		}
+		else 
+		{
+			if(!CheckFileExists(folder+"/"+route+"/tag.json"))
+			Scandownload(folder+"/"+route);
+		}
+	}
+}
+
+void APIDownloader()
+{
+	printf("Open Thread\n");
+	printf("Api Downloader\n");
+	mkdir("sdmc:/config/amiigo/", 0);
+	if(HasConnection())
+	{
+	RetrieveToFile("https://www.amiiboapi.com/api/amiibo/", "sdmc:/config/amiigo/API-D.json");
+		if(CheckFileExists("sdmc:/config/amiigo/API-D.json")&(fsize("sdmc:/config/amiigo/API-D.json") != 0)){
+		rename("sdmc:/config/amiigo/API.json", "sdmc:/config/amiigo/API-old.json");
+		rename("sdmc:/config/amiigo/API-D.json", "sdmc:/config/amiigo/API.json");
+		remove("sdmc:/config/amiigo/API-old.json");
+		remove("sdmc:/config/amiigo/API-D.json");
+		}
+		
+	RetrieveToFile("http://myrincon.duckdns.org/hollow/capi.php", "sdmc:/config/amiigo/CAPI-D.json");
+		if(CheckFileExists("sdmc:/config/amiigo/CAPI-D.json")&(fsize("sdmc:/config/amiigo/CAPI-D.json") != 0)){
+		rename("sdmc:/config/amiigo/CAPI.json", "sdmc:/config/amiigo/CAPI-old.json");
+		rename("sdmc:/config/amiigo/CAPI-D.json", "sdmc:/config/amiigo/CAPI.json");
+		remove("sdmc:/config/amiigo/CAPI-old.json");
+		remove("sdmc:/config/amiigo/CAPI-D.json");
+		}
+	}
+
+	//download amiibo icons
+//	mkdir("sdmc:/config/amiigo/IMG/", 0);
+//	mkdir("sdmc:/config/amiigo/IMG/Cache/", 0);
+//	printf("Icon downloader\n");
+	Scandownload("sdmc:/emuiibo/amiibo");
+	
+printf("Close Thread\n");
+destroyer = 1;
+}
+
+void IconDownloader()
+{
+	
 }

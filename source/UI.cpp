@@ -3,7 +3,14 @@
 #include <string>
 #include <vector>
 #include <switch.h>
+#include "Utils.h"
 using namespace std;
+
+//Global vars
+int BorderSize = 3;
+
+//Colors taken from here
+//https://material-ui.com/customization/color/
 
 class ScrollList
 {
@@ -76,23 +83,13 @@ void ScrollList::DrawList()
 	//Draw the Amiibo list
 	for(int i = 0; i < ListLength; i++)
 	{
-		//Set the background color with alternating colours
-		if(i % 2 == 1)
-		{
-			//Cyan A700
-			if(IsActive) SDL_SetRenderDrawColor(renderer, 0, 184, 212, 255);
-			else SDL_SetRenderDrawColor(renderer, 0, 184, 212, 255);
-		}
-		else
-		{
-			//Cyan A400
-			if(IsActive) SDL_SetRenderDrawColor(renderer, 0, 229, 255, 255);
-			else SDL_SetRenderDrawColor(renderer, 0, 229, 255, 255);
-		}
+		//Set the background color
+		if(IsActive) DrawJsonColorConfig(renderer, "UI_background");
+		else DrawJsonColorConfig(renderer, "UI_background_alt");
 		//Check if this is the highlighted file
 		if(i == CursorIndex && IsActive)
 		{
-			SDL_SetRenderDrawColor(renderer, 224, 247, 250, 255);
+			DrawJsonColorConfig(renderer, "UI_cursor");
 			//Cyan 50
 			//if(IsActive) SDL_SetRenderDrawColor(renderer, 224, 247, 250, 255);
 			//else SDL_SetRenderDrawColor(renderer, 232, 234, 246, 255); //Indigo
@@ -119,6 +116,17 @@ void ScrollList::DrawList()
 		SDL_Rect AmiiboNameRect = {TextX, TextY, FileNameSurface->w, FileNameSurface->h};
 		SDL_RenderCopy(renderer, FileNameTexture, NULL, &AmiiboNameRect);
 		
+		//Draw borders
+		DrawJsonColorConfig(renderer, "UI_borders_list");
+		SDL_Rect BorderRect = {ListXOffset, ListYOffset + (i * ListingHeight) - 1, ListWidth, BorderSize};
+		SDL_RenderFillRect(renderer, &BorderRect);
+		//Check if we need to draw one more border
+		if(ListLength < ListingsOnScreen && i == ListLength - 1)
+		{
+			BorderRect = {ListXOffset, ListYOffset + (++i * ListingHeight) - 1, ListWidth, BorderSize};
+			SDL_RenderFillRect(renderer, &BorderRect);
+		}
+		
 		//Check if option is pressed
 		if(CheckButtonPressed(&MenuItem, *TouchListX, *TouchListY))
 		{
@@ -144,29 +152,13 @@ TTF_Font *GetSharedFont(int FontSize)
 
 void DrawButtonBorders(SDL_Renderer* renderer, ScrollList *LeftList, ScrollList *MenuList, int HeaderHeight, int FooterHeight, int Width, int Height, bool SplitFooter)
 {
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-	int BorderSize = 3;
+	DrawJsonColorConfig(renderer, "UI_borders");
 	//Draw border for the two lists
 	SDL_Rect BorderRect = {MenuList->ListXOffset, MenuList->ListYOffset, BorderSize, MenuList->ListHeight};
 	SDL_RenderFillRect(renderer, &BorderRect);
 	//Draw border for the header
 	BorderRect = {0, HeaderHeight, Width, BorderSize};
 	SDL_RenderFillRect(renderer, &BorderRect);
-	//Draw the menu list border
-	for(int i = 0; i < MenuList->ListingsOnScreen; i++)
-	{
-		int MenuListButtonSize = MenuList->ListHeight / MenuList->ListingsOnScreen;
-		SDL_Rect BorderRect = {MenuList->ListXOffset, MenuList->ListYOffset + (i * MenuListButtonSize), MenuList->ListWidth, BorderSize};
-		SDL_RenderFillRect(renderer, &BorderRect);
-	}
-	//Draw the left list border
-	for(int i = 1; i < LeftList->ListingsOnScreen; i++)
-	{
-		int MenuListButtonSize = LeftList->ListHeight / LeftList->ListingsOnScreen;
-		SDL_Rect BorderRect = {0, LeftList->ListYOffset + (i * MenuListButtonSize) - 1, LeftList->ListWidth, BorderSize};
-		SDL_RenderFillRect(renderer, &BorderRect);
-		if(LeftList->ListingTextVec.size() == i) break;
-	}
 	//Draw the footer border
 	BorderRect = {0, Height - FooterHeight, Width, BorderSize};
 	SDL_RenderFillRect(renderer, &BorderRect);

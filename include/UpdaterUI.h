@@ -2,7 +2,7 @@
 #include <SDL.h>
 #include <SDL2/SDL_ttf.h>
 //#include <UI.h>
-#include "networking.h"
+#include "Networking.h"
 #include "nlohmann/json.hpp"
 #include <fstream>
 using namespace std;
@@ -14,11 +14,11 @@ class UpdaterUI
 	void DrawText(std::string);
 	int UpdateState = 0;
 	bool CheckForNewVersion();
-	std::string UpdateText = "null";
+	std::string UpdateText = " ";
 	TTF_Font *TextFont;
 	SDL_Color TextColour = {0, 0, 0};
 	json GitAPIData;
-	string latestid;
+	std::string LatestID;
 	public:
 	UpdaterUI();
 	void DrawUI();
@@ -28,4 +28,6 @@ class UpdaterUI
 	int *Width;
 	int *Height;
 	int *IsDone;
+	bool NewVersion;
+	std::string NROPath = "sdmc:/switch/Amiigo.nro";
 };
