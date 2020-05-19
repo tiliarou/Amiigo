@@ -3,6 +3,7 @@
 //It could definitely be more efficient. We only really need to call GetDataFromAPI() once but I'm lazy so I didn't.
 #include <SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL_image.h>
 #include <string>
 #include "nlohmann/json.hpp"
 #include "Networking.h"
@@ -323,6 +324,13 @@ void CreatorUI::DrawHeader()
 	SDL_Rect HeaderRect = {0,0, *Width, HeaderHeight};
 	SDL_RenderFillRect(renderer, &HeaderRect);
 
+	//draw logo image
+	static SDL_Surface* Alogo = IMG_Load("romfs:/icon_large.png");
+	SDL_Texture* Headericon = SDL_CreateTextureFromSurface(renderer, Alogo);
+	SDL_Rect ImagetRect = {1000, 0 , 260, 70};
+	SDL_RenderCopy(renderer, Headericon , NULL, &ImagetRect);
+	SDL_DestroyTexture(Headericon);
+	
 	//Draw the Amiibo path text
 	SDL_Surface* HeaderTextSurface = TTF_RenderUTF8_Blended_Wrapped(HeaderFont, "Amiigo Maker", TextColour, *Width);
 	SDL_Texture* HeaderTextTexture = SDL_CreateTextureFromSurface(renderer, HeaderTextSurface);

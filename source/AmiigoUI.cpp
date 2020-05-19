@@ -237,7 +237,7 @@ void AmiigoUI::DrawUI()
 	
 		if ((AmiiboList->SelectedIndex != ImgSel)&AmiiboList->IsActive){
 			ImgSel = AmiiboList->SelectedIndex;
-			printf("set %d = %d\n",AmiiboList->SelectedIndex,ImgSel);
+//			printf("set %d = %d\n",AmiiboList->SelectedIndex,ImgSel);
 
 			int list = AmiiboList->SelectedIndex;
 			int maxL =  Files.size()-1;
@@ -250,7 +250,7 @@ void AmiigoUI::DrawUI()
 			if(CheckFileExists(ImgPath)&(fsize(ImgPath) != 0)){
 				BIcon = IMG_Load(ImgPath.c_str());
 			}else{
-				BIcon = NULL;
+				BIcon = IMG_Load("romfs:/unknow.png");
 			}
 		//close
 	}
@@ -286,6 +286,7 @@ void AmiigoUI::DrawHeader()
 	//String is empty so we need to set it to something so SDL doesn't crash
 	if(CurrentAmiibo[0] == '\0'||!g_emuiibo_init_ok)
 	{
+		if(ImgAct > 0) {AIcon = IMG_Load("romfs:/Amiibo.png"); ImgAct = 0;}
 		if(g_emuiibo_init_ok)
 		HeaderText = "No Amiibo Selected";
 		else
@@ -329,7 +330,7 @@ void AmiigoUI::DrawHeader()
 					}else{
 						ImgAct = 0;//set image triger off
 						printf("Image %s Missing KO\n",imageI.c_str());
-						AIcon = NULL;//empty icon
+						AIcon = IMG_Load("romfs:/Amibo.png");//empty icon
 					}
 				}
 			}else HeaderText = "amiibo.json bad sintax";
@@ -337,6 +338,14 @@ void AmiigoUI::DrawHeader()
 
 
 	}
+	//draw logo image
+	static SDL_Surface* Alogo = IMG_Load("romfs:/icon_large.png");
+	SDL_Texture* Headericon = SDL_CreateTextureFromSurface(renderer, Alogo);
+	SDL_Rect ImagetRect = {1000, 0 , 260, 70};
+	SDL_RenderCopy(renderer, Headericon , NULL, &ImagetRect);
+	SDL_DestroyTexture(Headericon);
+
+	
 	//Draw the Amiibo path text
 	SDL_Surface* HeaderTextSurface = TTF_RenderUTF8_Blended_Wrapped(HeaderFont, HeaderText.c_str(), TextColour, *Width);
 	SDL_Texture* HeaderTextTexture = SDL_CreateTextureFromSurface(renderer, HeaderTextSurface);

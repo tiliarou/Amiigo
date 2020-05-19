@@ -17,6 +17,7 @@ int destroyer = 0;
 bool g_emuiibo_init_ok = false;
 int main(int argc, char *argv[])
 {
+romfsInit();
 socketInitializeDefault();
 //debug nxlink
 nxlinkStdio(); 
@@ -182,13 +183,13 @@ first = std::thread(APIDownloader);
 		first.join();
 	}
 
+	romfsExit();
+	emu::Exit();
 	socketExit();
 	nifmExit();
 	plExit();
-//	nfpemuExit();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
-	
     return 0;
 }

@@ -40,12 +40,13 @@ std::string RetrieveContent(std::string URL, std::string MIMEType)
     }
     curl_easy_setopt(curl, CURLOPT_URL, URL.c_str());
 	curl_easy_setopt(curl, CURLOPT_USERAGENT, "Amiigo"); //Turns out this was important and I should not have deleted it
+	curl_easy_setopt(curl, CURLOPT_CAINFO, "romfs:/certificate.pem");
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlStrWrite);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &cnt);
-    curl_easy_perform(curl);
+    CURLcode res = curl_easy_perform(curl);	if (res != CURLE_OK) printf("\n%s\n",curl_easy_strerror(res));
     curl_easy_cleanup(curl);
     return cnt;
 }
@@ -58,13 +59,14 @@ void RetrieveToFile(std::string URL, std::string Path)
         CURL *curl = curl_easy_init();
         curl_easy_setopt(curl, CURLOPT_URL, URL.c_str());
         curl_easy_setopt(curl, CURLOPT_USERAGENT, "Amiigo");
+		curl_easy_setopt(curl, CURLOPT_CAINFO, "romfs:/certificate.pem");
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlFileWrite);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, f);
         curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
-        curl_easy_perform(curl);
+		CURLcode res = curl_easy_perform(curl);	if (res != CURLE_OK) printf("\n%s\n%s\n%s\n",curl_easy_strerror(res),URL.c_str(),Path.c_str());
         curl_easy_cleanup(curl);
     }
     fclose(f);
@@ -121,7 +123,7 @@ void Scandownload(string folder)
 			string imageI = folder+"/"+route+"/amiibo.png";
 			string imageF = folder+"/"+route+"/amiibo_cache.png";
 			string url = APIJSData["url"].get<std::string>()+APIJSData[route]["image"].get<std::string>();
-			printf("dir %s OK\n",route.c_str());
+			//printf("dir %s OK\n",route.c_str());
 			if(!CheckFileExists(imageI))
 			{//download icon	
 				printf("%s - Downloading %s\nTo %s\n",route.c_str(),url.c_str(),imageI.c_str());
@@ -129,7 +131,7 @@ void Scandownload(string folder)
 				if (fsize(imageF) != 0)
 				rename(imageF.c_str(), imageI.c_str());
 				printf("Downloaded \n");
-			}else printf("The icon exist %s OK\n",route.c_str());
+			}//else printf("The icon exist %s OK\n",route.c_str());
 		}
 		else 
 		{
@@ -146,20 +148,18 @@ void APIDownloader()
 	mkdir("sdmc:/config/amiigo/", 0);
 	if(HasConnection())
 	{
-	RetrieveToFile("https://www.amiiboapi.com/api/amiibo/", "sdmc:/config/amiigo/API-D.json");
-		if(CheckFileExists("sdmc:/config/amiigo/API-D.json")&(fsize("sdmc:/config/amiigo/API-D.json") != 0)){
-		rename("sdmc:/config/amiigo/API.json", "sdmc:/config/amiigo/API-old.json");
-		rename("sdmc:/config/amiigo/API-D.json", "sdmc:/config/amiigo/API.json");
-		remove("sdmc:/config/amiigo/API-old.json");
-		remove("sdmc:/config/amiigo/API-D.json");
+		printf("main Api\n");
+	RetrieveToFile("https://www.amiiboapi.com/api/amiibo/", "/config/amiigo/API.temp");
+		if(CheckFileExists("sdmc:/config/amiigo/API.temp")&(fsize("sdmc:/config/amiigo/API.temp") != 0)){
+		remove("sdmc:/config/amiigo/API.json");
+		rename("sdmc:/config/amiigo/API.temp", "sdmc:/config/amiigo/API.json");
 		}
 		
-	RetrieveToFile("http://myrincon.duckdns.org/hollow/capi.php", "sdmc:/config/amiigo/CAPI-D.json");
-		if(CheckFileExists("sdmc:/config/amiigo/CAPI-D.json")&(fsize("sdmc:/config/amiigo/CAPI-D.json") != 0)){
-		rename("sdmc:/config/amiigo/CAPI.json", "sdmc:/config/amiigo/CAPI-old.json");
-		rename("sdmc:/config/amiigo/CAPI-D.json", "sdmc:/config/amiigo/CAPI.json");
-		remove("sdmc:/config/amiigo/CAPI-old.json");
-		remove("sdmc:/config/amiigo/CAPI-D.json");
+		printf("Custom Api\n");
+	RetrieveToFile("http://myrincon.duckdns.org/hollow/capi.php", "sdmc:/config/amiigo/CAPI.temp");
+		if(CheckFileExists("sdmc:/config/amiigo/CAPI.temp")&(fsize("sdmc:/config/amiigo/CAPI.temp") != 0)){
+		remove("sdmc:/config/amiigo/CAPI.json");
+		rename("sdmc:/config/amiigo/CAPI.temp", "sdmc:/config/amiigo/CAPI.json");
 		}
 	}
 
