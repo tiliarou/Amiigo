@@ -126,12 +126,12 @@ void AmiigoUI::GetInput()
 							}
 
                         }
-						//Y pressed
+						/* 
+						//Y pressed ToDo 
 						else if(Event->jbutton.button == 3)
 						{
-//							nfpemuMoveToNextAmiibo();
 							ImgAct = 1;//reload signal for the image
-						}
+						}*/
 						//Up pressed
 						else if(Event->jbutton.button == 13||Event->jbutton.button == 17)
 						{

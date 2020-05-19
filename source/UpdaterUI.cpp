@@ -113,8 +113,13 @@ void UpdaterUI::DrawUI()
 		//Download update stage
 		case 2:
 		{
+			//change download path
+			if(CheckFileExists("sdmc:/switch/Amiigo/Amiigo.nro"))
+			NROPath = "sdmc:/switch/Amiigo/Amiigo.nro";
+			
 			string UpdateFileURL = "https://github.com/StarDustCFW/Amiigo/releases/download/" + LatestID + "/Amiigo.nro";
 			RetrieveToFile(UpdateFileURL, "sdmc:/switch/Failed_Amiigo_Update.nro");
+			romfsExit();
 			remove(NROPath.c_str());
 			rename("sdmc:/switch/Failed_Amiigo_Update.nro", NROPath.c_str());
 			*IsDone = 1;
