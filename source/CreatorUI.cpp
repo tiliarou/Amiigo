@@ -91,8 +91,7 @@ CreatorUI::CreatorUI()
 		AmiiboVarsVec.push_back(TempAmiiboVars);
 		
 		//Loop through every element in the vector
-		int maxSV = SeriesVec.size();
-		for(int j = 0; j < maxSV; j++)
+		for(int j = 0; j < (int)SeriesVec.size(); j++)
 		{
 			//If the vector has the name we break the loop
 			if(SeriesVec.at(j) == SeriesName)
@@ -258,7 +257,7 @@ void CreatorUI::ListSelect()
         //Write amiibo.json
         string FilePath = AmiiboPath + "/amiibo.json";
         ofstream CommonFileWriter(FilePath.c_str());
-        CommonFileWriter << "{ \"first_write_date\": { \"d\": 1, \"m\": 1, \"y\": 2019 }, \"id\": {\"game_character_id\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["game_character_id"].get<int>())+", \"character_variant\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["character_variant"].get<int>())+", \"figure_type\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["figure_type"].get<int>())+",  \"model_number\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["model_number"].get<int>())+", \"series\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["series"].get<int>())+" }, \"last_write_date\": { \"d\": 1, \"m\": 1, \"y\": 2019 }, \"mii_charinfo_file\": \"mii-charinfo.bin\", \"name\": \"" + JData["amiibo"][IndexInJdata]["name"].get<std::string>() + "\", \"version\": 0, \"write_counter\": 0 }";
+        CommonFileWriter << "{\"first_write_date\": { \"d\": 1, \"m\": 1, \"y\": 2019 }, \"id\": {\"game_character_id\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["game_character_id"].get<int>())+", \"character_variant\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["character_variant"].get<int>())+", \"figure_type\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["figure_type"].get<int>())+",  \"model_number\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["model_number"].get<int>())+", \"series\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["series"].get<int>())+" }, \"last_write_date\": { \"d\": 1, \"m\": 1, \"y\": 2019 }, \"mii_charinfo_file\": \"mii-charinfo.bin\", \"name\": \"" + JData["amiibo"][IndexInJdata]["name"].get<std::string>() + "\", \"version\": 0, \"write_counter\": 0 , \"uuid\": ["+std::to_string(rand() % 250 + 1)+", "+std::to_string(rand() % 250 + 1)+", "+std::to_string(rand() % 250 + 1)+", "+std::to_string(rand() % 250 + 1)+", "+std::to_string(rand() % 250 + 1)+", "+std::to_string(rand() % 250 + 1)+", "+std::to_string(rand() % 250 + 1)+", 0, 0, 0] }";
         CommonFileWriter.close();
 		
         //Write amiibo.flag
@@ -284,8 +283,7 @@ void CreatorUI::ListSelect()
 		string SelectedSeries = SeriesVec.at(SeriesList->SelectedIndex);
 		SeriesList->ListingTextVec.clear();
 		SortedAmiiboVarsVec.clear();
-		int MaxVV = AmiiboVarsVec.size();
-		for(int i = 0; i < MaxVV; i++)
+		for(int i = 0; i < (int)AmiiboVarsVec.size(); i++)
 		{
 			//There's something happening here
 			//What it is ain't exactly clear
