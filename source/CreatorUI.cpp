@@ -254,34 +254,26 @@ void CreatorUI::ListSelect()
         string AmiiboPath = *CurrentPath + JData["amiibo"][IndexInJdata]["name"].get<std::string>();
  		PleaseWait("Please wait, building "+JData["amiibo"][IndexInJdata]["name"].get<std::string>()+"...");
 		mkdir(AmiiboPath.c_str(), 0);
-        //Write common.json
-        string FilePath = AmiiboPath + "/common.json";
-        ofstream CommonFileWriter(FilePath.c_str());
-        CommonFileWriter << "{\"lastWriteDate\": \"2019-01-01\",\"writeCounter\": 0,\"version\": 0}";
-        CommonFileWriter.close();
-        //Write model.json
-        FilePath = AmiiboPath + "/model.json";
-        ofstream ModelFileWriter(FilePath.c_str());
-        ModelFileWriter << "{\"amiiboId\": \"" + JData["amiibo"][IndexInJdata]["head"].get<std::string>() + JData["amiibo"][IndexInJdata]["tail"].get<std::string>() + "\"}";
-        ModelFileWriter.close();
-        //write tag.json
-        FilePath = AmiiboPath + "/tag.json";
-        ofstream TagFileWriter(FilePath.c_str());
-        TagFileWriter << "{\"randomUuid\": true}";
-        TagFileWriter.close();
-        //write register.json
-        FilePath = AmiiboPath + "/register.json";
-        ofstream RegFileWriter(FilePath.c_str());
-        RegFileWriter << "{\"name\": \"" + JData["amiibo"][IndexInJdata]["name"].get<std::string>() + "\",\"firstWriteDate\": \"2019-01-01\",\"miiCharInfo\": \"mii-charinfo.bin\"}";
-        RegFileWriter.close();
 		
-/*
+        //Write amiibo.json
+        string FilePath = AmiiboPath + "/amiibo.json";
+        ofstream CommonFileWriter(FilePath.c_str());
+        CommonFileWriter << "{ \"first_write_date\": { \"d\": 1, \"m\": 1, \"y\": 2019 }, \"id\": {\"game_character_id\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["game_character_id"].get<int>())+", \"character_variant\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["character_variant"].get<int>())+", \"figure_type\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["figure_type"].get<int>())+",  \"model_number\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["model_number"].get<int>())+", \"series\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["series"].get<int>())+" }, \"last_write_date\": { \"d\": 1, \"m\": 1, \"y\": 2019 }, \"mii_charinfo_file\": \"mii-charinfo.bin\", \"name\": \"" + JData["amiibo"][IndexInJdata]["name"].get<std::string>() + "\", \"version\": 0, \"write_counter\": 0 }";
+        CommonFileWriter.close();
+		
+        //Write amiibo.flag
+        FilePath = AmiiboPath + "/amiibo.flag";
+        ofstream ModelFileWriter(FilePath.c_str());
+        ModelFileWriter << "";
+        ModelFileWriter.close();
+		
 		//create icon
-		mkdir("sdmc:/emuiibo/cache", 0);
-		string iconname = "sdmc:/emuiibo/cache/"+JData["amiibo"][IndexInJdata]["name"].get<std::string>()+".png";
-		if(!CheckFileExists(iconname))
-		RetrieveToFile(JData["amiibo"][IndexInJdata]["image"].get<std::string>(), iconname);
-*/
+		string iconname = AmiiboPath+"/amiibo.png";
+		string icontemp = AmiiboPath+"/amiibo.temp";
+		if(!CheckFileExists(iconname)){
+			RetrieveToFile(JData["url"].get<std::string>()+JData["amiibo"][IndexInJdata]["image"].get<std::string>(), icontemp);
+			if (fsize(icontemp) != 0) rename(icontemp.c_str(), iconname.c_str());
+		}
 	}
 	//Add the Amiibos from the selected series to the list
 	else
