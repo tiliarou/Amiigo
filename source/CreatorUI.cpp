@@ -3,6 +3,7 @@
 //It could definitely be more efficient. We only really need to call GetDataFromAPI() once but I'm lazy so I didn't.
 #include <SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL_image.h>
 #include <string>
 #include "nlohmann/json.hpp"
 #include "Networking.h"
@@ -14,6 +15,7 @@
 using namespace std;
 using json = nlohmann::json;
 
+int Creatype = 0;
 
 class AmiiboVars
 {
@@ -90,8 +92,7 @@ CreatorUI::CreatorUI()
 		AmiiboVarsVec.push_back(TempAmiiboVars);
 		
 		//Loop through every element in the vector
-		int maxSV = SeriesVec.size();
-		for(int j = 0; j < maxSV; j++)
+		for(int j = 0; j < (int)SeriesVec.size(); j++)
 		{
 			//If the vector has the name we break the loop
 			if(SeriesVec.at(j) == SeriesName)
@@ -199,7 +200,13 @@ void CreatorUI::GetInput()
 							SeriesList->CursorIndex = 0;
 							SeriesList->ListRenderOffset = 0;
 							HasSelectedSeries = false;
+						}else if(Event->jbutton.button == 11)
+						{
+							Creatype++;
+							if(Creatype > 3)
+								Creatype = 0;
 						}
+
                     }
                     break;
             }
@@ -250,37 +257,55 @@ void CreatorUI::ListSelect()
 	if(HasSelectedSeries)
 	{
 		int IndexInJdata = SortedAmiiboVarsVec.at(SeriesList->SelectedIndex).ListIndex;
-        string AmiiboPath = *CurrentPath + JData["amiibo"][IndexInJdata]["name"].get<std::string>();
- 		PleaseWait("Please wait, building "+JData["amiibo"][IndexInJdata]["name"].get<std::string>()+"...");
-		mkdir(AmiiboPath.c_str(), 0);
-        //Write common.json
-        string FilePath = AmiiboPath + "/common.json";
-        ofstream CommonFileWriter(FilePath.c_str());
-        CommonFileWriter << "{\"lastWriteDate\": \"2019-01-01\",\"writeCounter\": 0,\"version\": 0}";
-        CommonFileWriter.close();
-        //Write model.json
-        FilePath = AmiiboPath + "/model.json";
-        ofstream ModelFileWriter(FilePath.c_str());
-        ModelFileWriter << "{\"amiiboId\": \"" + JData["amiibo"][IndexInJdata]["head"].get<std::string>() + JData["amiibo"][IndexInJdata]["tail"].get<std::string>() + "\"}";
-        ModelFileWriter.close();
-        //write tag.json
-        FilePath = AmiiboPath + "/tag.json";
-        ofstream TagFileWriter(FilePath.c_str());
-        TagFileWriter << "{\"randomUuid\": true}";
-        TagFileWriter.close();
-        //write register.json
-        FilePath = AmiiboPath + "/register.json";
-        ofstream RegFileWriter(FilePath.c_str());
-        RegFileWriter << "{\"name\": \"" + JData["amiibo"][IndexInJdata]["name"].get<std::string>() + "\",\"firstWriteDate\": \"2019-01-01\",\"miiCharInfo\": \"mii-charinfo.bin\"}";
-        RegFileWriter.close();
+        string AmiiboPath = *CurrentPath ;
+		if (AmiiboPath != "sdmc:/emuiibo/amiibo/") {Creatype = 0;}//force name if you are not on root
+		switch(Creatype)
+		{
+			case 0:
+			AmiiboPath += JData["amiibo"][IndexInJdata]["name"].get<std::string>(); 
+			break;
+			
+			case 1:
+			AmiiboPath += JData["amiibo"][IndexInJdata]["amiiboSeries"].get<std::string>();
+			mkdir(AmiiboPath.c_str(), 0777);
+			AmiiboPath += "/"+ JData["amiibo"][IndexInJdata]["name"].get<std::string>();
+			break;
+			
+			case 2:
+			AmiiboPath += JData["amiibo"][IndexInJdata]["character"].get<std::string>();
+			mkdir(AmiiboPath.c_str(), 0777);
+			AmiiboPath += "/"+ JData["amiibo"][IndexInJdata]["name"].get<std::string>();
+			break;
+			
+			case 3:
+			AmiiboPath += JData["amiibo"][IndexInJdata]["gameSeries"].get<std::string>();
+			mkdir(AmiiboPath.c_str(), 0777);
+			AmiiboPath += "/"+ JData["amiibo"][IndexInJdata]["name"].get<std::string>();
+			break;
+		}	
+
+ 		PleaseWait("Please wait, building:\n"+AmiiboPath+"...");
+		mkdir(AmiiboPath.c_str(), 0777);
 		
-/*
+        //Write amiibo.json
+        string FilePath = AmiiboPath + "/amiibo.json";
+        ofstream CommonFileWriter(FilePath.c_str());
+        CommonFileWriter << "{\"first_write_date\": { \"d\": 1, \"m\": 1, \"y\": 2019 }, \"id\": {\"game_character_id\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["game_character_id"].get<int>())+", \"character_variant\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["character_variant"].get<int>())+", \"figure_type\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["figure_type"].get<int>())+",  \"model_number\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["model_number"].get<int>())+", \"series\": "+std::to_string(JData["amiibo"][IndexInJdata]["emuiibo"]["series"].get<int>())+" }, \"last_write_date\": { \"d\": 1, \"m\": 1, \"y\": 2019 }, \"mii_charinfo_file\": \"mii-charinfo.bin\", \"name\": \"" + JData["amiibo"][IndexInJdata]["name"].get<std::string>() + "\", \"version\": 0, \"write_counter\": 0 , \"uuid\": ["+std::to_string(rand() % 250 + 1)+", "+std::to_string(rand() % 250 + 1)+", "+std::to_string(rand() % 250 + 1)+", "+std::to_string(rand() % 250 + 1)+", "+std::to_string(rand() % 250 + 1)+", "+std::to_string(rand() % 250 + 1)+", "+std::to_string(rand() % 250 + 1)+", 0, 0, 0] }";
+        CommonFileWriter.close();
+		
+        //Write amiibo.flag
+        FilePath = AmiiboPath + "/amiibo.flag";
+        ofstream ModelFileWriter(FilePath.c_str());
+        ModelFileWriter << "";
+        ModelFileWriter.close();
+		
 		//create icon
-		mkdir("sdmc:/emuiibo/cache", 0);
-		string iconname = "sdmc:/emuiibo/cache/"+JData["amiibo"][IndexInJdata]["name"].get<std::string>()+".png";
-		if(!CheckFileExists(iconname))
-		RetrieveToFile(JData["amiibo"][IndexInJdata]["image"].get<std::string>(), iconname);
-*/
+		string iconname = AmiiboPath+"/amiibo.png";
+		string icontemp = AmiiboPath+"/amiibo.temp";
+		if(!CheckFileExists(iconname)){
+			RetrieveToFile(JData["url"].get<std::string>()+JData["amiibo"][IndexInJdata]["image"].get<std::string>(), icontemp);
+			if (fsize(icontemp) != 0) rename(icontemp.c_str(), iconname.c_str());
+		}
 	}
 	//Add the Amiibos from the selected series to the list
 	else
@@ -291,8 +316,7 @@ void CreatorUI::ListSelect()
 		string SelectedSeries = SeriesVec.at(SeriesList->SelectedIndex);
 		SeriesList->ListingTextVec.clear();
 		SortedAmiiboVarsVec.clear();
-		int MaxVV = AmiiboVarsVec.size();
-		for(int i = 0; i < MaxVV; i++)
+		for(int i = 0; i < (int)AmiiboVarsVec.size(); i++)
 		{
 			//There's something happening here
 			//What it is ain't exactly clear
@@ -323,8 +347,37 @@ void CreatorUI::DrawHeader()
 	SDL_Rect HeaderRect = {0,0, *Width, HeaderHeight};
 	SDL_RenderFillRect(renderer, &HeaderRect);
 
+	//draw logo image
+	static SDL_Surface* Alogo = IMG_Load("romfs:/icon_large.png");
+	SDL_Texture* Headericon = SDL_CreateTextureFromSurface(renderer, Alogo);
+	SDL_Rect ImagetRect = {1000, 0 , 260, 70};
+	SDL_RenderCopy(renderer, Headericon , NULL, &ImagetRect);
+	SDL_DestroyTexture(Headericon);
+	
+	std::string StatusText = "";
+
+switch(Creatype)
+{
+	case 0:
+	StatusText = "amiiboName";
+	break;
+	
+	case 1:
+	StatusText = "amiiboSeries";
+	break;
+	
+	case 2:
+	StatusText = "character";
+	break;
+	
+	case 3:
+	StatusText = "gameSeries";
+	break;
+}	
+
 	//Draw the Amiibo path text
-	SDL_Surface* HeaderTextSurface = TTF_RenderUTF8_Blended_Wrapped(HeaderFont, "Amiigo Maker", TextColour, *Width);
+	string headertext = "Amiigo Maker ("+StatusText+")";
+	SDL_Surface* HeaderTextSurface = TTF_RenderUTF8_Blended_Wrapped(HeaderFont, headertext.c_str(), TextColour, *Width);
 	SDL_Texture* HeaderTextTexture = SDL_CreateTextureFromSurface(renderer, HeaderTextSurface);
 	SDL_Rect HeaderTextRect = {(*Width - HeaderTextSurface->w) / 2, (HeaderHeight - HeaderTextSurface->h) / 2, HeaderTextSurface->w, HeaderTextSurface->h};
 	SDL_RenderCopy(renderer, HeaderTextTexture, NULL, &HeaderTextRect);

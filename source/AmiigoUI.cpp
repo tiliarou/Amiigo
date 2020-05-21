@@ -126,12 +126,12 @@ void AmiigoUI::GetInput()
 							}
 
                         }
-						//Y pressed
+						/* 
+						//Y pressed ToDo 
 						else if(Event->jbutton.button == 3)
 						{
-//							nfpemuMoveToNextAmiibo();
 							ImgAct = 1;//reload signal for the image
-						}
+						}*/
 						//Up pressed
 						else if(Event->jbutton.button == 13||Event->jbutton.button == 17)
 						{
@@ -235,30 +235,38 @@ void AmiigoUI::DrawUI()
 	MenuList->DrawList();
 	DrawButtonBorders(renderer, AmiiboList, MenuList, HeaderHeight, FooterHeight, *Width, *Height, false);
 	
-		if ((AmiiboList->SelectedIndex != ImgSel)&AmiiboList->IsActive){
-			ImgSel = AmiiboList->SelectedIndex;
-			printf("set %d = %d\n",AmiiboList->SelectedIndex,ImgSel);
-
-			int list = AmiiboList->SelectedIndex;
 			int maxL =  Files.size()-1;
-			//control leth to not crash
-			if (list < 0){list = maxL;}
-			if ((list > maxL)&(list > 0)) {list = 0;}
-									
-			//load the selected image
-			string ImgPath = std::string(ListDir)+ std::string(Files.at(list).d_name)+"/amiibo.png";
-			if(CheckFileExists(ImgPath)&(fsize(ImgPath) != 0)){
-				BIcon = IMG_Load(ImgPath.c_str());
-			}else{
-				BIcon = NULL;
+		if ((AmiiboList->SelectedIndex != ImgSel)&AmiiboList->IsActive)
+		{
+			if (maxL >= 0)
+			{
+				int list = AmiiboList->SelectedIndex;
+				ImgSel = AmiiboList->SelectedIndex;
+				printf("Total Amiibos %ld \n",Files.size() );
+				printf("set %d = %d\n",AmiiboList->SelectedIndex,ImgSel);
+				//control leth to not crash
+				if (list < 0){list = maxL;}
+				if ((list > maxL)&(list > 0)) {list = 0;}
+										
+				//load the selected image
+				string ImgPath = std::string(ListDir)+ std::string(Files.at(list).d_name)+"/amiibo.png";
+				if(CheckFileExists(ImgPath)&(fsize(ImgPath) != 0)){
+					BIcon = IMG_Load(ImgPath.c_str());
+				}else{
+					BIcon = IMG_Load("romfs:/unknow.png");
+				}
+			//close
 			}
-		//close
-	}
+		}
+		
+	if (maxL >= 0)
+	{
 	DrawJsonColorConfig(renderer, "UI_borders_list");
 	//SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_Rect HeaderRect = {690,73, 270, 286};
 	SDL_RenderFillRect(renderer, &HeaderRect);
-		
+	}
+	
 	//draw sel amiibo image
 				SDL_Texture* Headericon2 = SDL_CreateTextureFromSurface(renderer, BIcon);
 				SDL_Rect ImagetRect2 = {695, 75 , 260, 280};
@@ -286,6 +294,7 @@ void AmiigoUI::DrawHeader()
 	//String is empty so we need to set it to something so SDL doesn't crash
 	if(CurrentAmiibo[0] == '\0'||!g_emuiibo_init_ok)
 	{
+		if(ImgAct > 0) {AIcon = IMG_Load("romfs:/Amiibo.png"); ImgAct = 0;}
 		if(g_emuiibo_init_ok)
 		HeaderText = "No Amiibo Selected";
 		else
@@ -299,7 +308,7 @@ void AmiigoUI::DrawHeader()
 		ifstream FileReader(AmiibopathS+"/amiibo.json");
 		//If the register file doesn't exist display message. This prevents a infinate loop.
 		if(!FileReader){
-			HeaderText = "Missing amiibo json! Reboot Required";
+			HeaderText = "Missing amiibo json!";
 			emu::TryParseVirtualAmiibo(CurrentAmiibo, FS_MAX_PATH, &C_active_amiibo_data);
 		} 
 		else //Else get the amiibo name from the json
@@ -329,7 +338,7 @@ void AmiigoUI::DrawHeader()
 					}else{
 						ImgAct = 0;//set image triger off
 						printf("Image %s Missing KO\n",imageI.c_str());
-						AIcon = NULL;//empty icon
+						AIcon = IMG_Load("romfs:/Amibo.png");//empty icon
 					}
 				}
 			}else HeaderText = "amiibo.json bad sintax";
@@ -337,6 +346,14 @@ void AmiigoUI::DrawHeader()
 
 
 	}
+	//draw logo image
+	static SDL_Surface* Alogo = IMG_Load("romfs:/icon_large.png");
+	SDL_Texture* Headericon = SDL_CreateTextureFromSurface(renderer, Alogo);
+	SDL_Rect ImagetRect = {1000, 0 , 260, 70};
+	SDL_RenderCopy(renderer, Headericon , NULL, &ImagetRect);
+	SDL_DestroyTexture(Headericon);
+
+	
 	//Draw the Amiibo path text
 	SDL_Surface* HeaderTextSurface = TTF_RenderUTF8_Blended_Wrapped(HeaderFont, HeaderText.c_str(), TextColour, *Width);
 	SDL_Texture* HeaderTextTexture = SDL_CreateTextureFromSurface(renderer, HeaderTextSurface);
@@ -437,8 +454,7 @@ void AmiigoUI::ScanForAmiibos()
 	});
 	//Add the dirs to the list
 	AmiiboList->ListingTextVec.clear();
-	int maxF = Files.size();
-	for(int i = 0; i < maxF; i++)
+	for(int i = 0; i < (int)Files.size(); i++)
 	{
 		AmiiboList->ListingTextVec.push_back(Files.at(i).d_name);
 	}
@@ -462,6 +478,7 @@ void AmiigoUI::PleaseWait(string mensage)
 
 void AmiigoUI::SetAmiibo(int Index)
 {
+	if (Index > (int)Files.size()-1){ Index = Files.size()-1;}//limit var to evoid a crash
 	char PathToAmiibo[FS_MAX_PATH] = "";
 	strcat(PathToAmiibo, ListDir.c_str());
 	strcat(PathToAmiibo, Files.at(Index).d_name);
