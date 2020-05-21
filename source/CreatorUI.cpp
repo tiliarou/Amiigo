@@ -15,6 +15,7 @@
 using namespace std;
 using json = nlohmann::json;
 
+int Creatype = 0;
 
 class AmiiboVars
 {
@@ -199,7 +200,13 @@ void CreatorUI::GetInput()
 							SeriesList->CursorIndex = 0;
 							SeriesList->ListRenderOffset = 0;
 							HasSelectedSeries = false;
+						}else if(Event->jbutton.button == 11)
+						{
+							Creatype++;
+							if(Creatype > 3)
+								Creatype = 0;
 						}
+
                     }
                     break;
             }
@@ -250,9 +257,38 @@ void CreatorUI::ListSelect()
 	if(HasSelectedSeries)
 	{
 		int IndexInJdata = SortedAmiiboVarsVec.at(SeriesList->SelectedIndex).ListIndex;
-        string AmiiboPath = *CurrentPath + JData["amiibo"][IndexInJdata]["name"].get<std::string>();
- 		PleaseWait("Please wait, building "+JData["amiibo"][IndexInJdata]["name"].get<std::string>()+"...");
-		mkdir(AmiiboPath.c_str(), 0);
+        string AmiiboPath = *CurrentPath ;
+		if (AmiiboPath != "sdmc:/emuiibo/amiibo/") {Creatype = 0;}//force name if you are not on root
+		switch(Creatype)
+		{
+			case 0:
+			AmiiboPath += JData["amiibo"][IndexInJdata]["name"].get<std::string>(); 
+			break;
+			
+			case 1:
+			AmiiboPath += JData["amiibo"][IndexInJdata]["amiiboSeries"].get<std::string>();
+			mkdir(AmiiboPath.c_str(), 0777);
+			AmiiboPath += "/"+ JData["amiibo"][IndexInJdata]["name"].get<std::string>();
+			mkdir(AmiiboPath.c_str(), 0777);
+			break;
+			
+			case 2:
+			AmiiboPath += JData["amiibo"][IndexInJdata]["character"].get<std::string>();
+			mkdir(AmiiboPath.c_str(), 0777);
+			AmiiboPath += "/"+ JData["amiibo"][IndexInJdata]["name"].get<std::string>();
+			mkdir(AmiiboPath.c_str(), 0777);
+			break;
+			
+			case 3:
+			AmiiboPath += JData["amiibo"][IndexInJdata]["gameSeries"].get<std::string>();
+			mkdir(AmiiboPath.c_str(), 0777);
+			AmiiboPath += "/"+ JData["amiibo"][IndexInJdata]["name"].get<std::string>();
+			mkdir(AmiiboPath.c_str(), 0777);
+			break;
+		}	
+
+ 		PleaseWait("Please wait, building:\n"+AmiiboPath+"...");
+		mkdir(AmiiboPath.c_str(), 0777);
 		
         //Write amiibo.json
         string FilePath = AmiiboPath + "/amiibo.json";
@@ -321,8 +357,30 @@ void CreatorUI::DrawHeader()
 	SDL_RenderCopy(renderer, Headericon , NULL, &ImagetRect);
 	SDL_DestroyTexture(Headericon);
 	
+	std::string StatusText = "";
+
+switch(Creatype)
+{
+	case 0:
+	StatusText = "amiiboName";
+	break;
+	
+	case 1:
+	StatusText = "amiiboSeries";
+	break;
+	
+	case 2:
+	StatusText = "character";
+	break;
+	
+	case 3:
+	StatusText = "gameSeries";
+	break;
+}	
+
 	//Draw the Amiibo path text
-	SDL_Surface* HeaderTextSurface = TTF_RenderUTF8_Blended_Wrapped(HeaderFont, "Amiigo Maker", TextColour, *Width);
+	string headertext = "Amiigo Maker ("+StatusText+")";
+	SDL_Surface* HeaderTextSurface = TTF_RenderUTF8_Blended_Wrapped(HeaderFont, headertext.c_str(), TextColour, *Width);
 	SDL_Texture* HeaderTextTexture = SDL_CreateTextureFromSurface(renderer, HeaderTextSurface);
 	SDL_Rect HeaderTextRect = {(*Width - HeaderTextSurface->w) / 2, (HeaderHeight - HeaderTextSurface->h) / 2, HeaderTextSurface->w, HeaderTextSurface->h};
 	SDL_RenderCopy(renderer, HeaderTextTexture, NULL, &HeaderTextRect);
