@@ -269,21 +269,18 @@ void CreatorUI::ListSelect()
 			AmiiboPath += JData["amiibo"][IndexInJdata]["amiiboSeries"].get<std::string>();
 			mkdir(AmiiboPath.c_str(), 0777);
 			AmiiboPath += "/"+ JData["amiibo"][IndexInJdata]["name"].get<std::string>();
-			mkdir(AmiiboPath.c_str(), 0777);
 			break;
 			
 			case 2:
 			AmiiboPath += JData["amiibo"][IndexInJdata]["character"].get<std::string>();
 			mkdir(AmiiboPath.c_str(), 0777);
 			AmiiboPath += "/"+ JData["amiibo"][IndexInJdata]["name"].get<std::string>();
-			mkdir(AmiiboPath.c_str(), 0777);
 			break;
 			
 			case 3:
 			AmiiboPath += JData["amiibo"][IndexInJdata]["gameSeries"].get<std::string>();
 			mkdir(AmiiboPath.c_str(), 0777);
 			AmiiboPath += "/"+ JData["amiibo"][IndexInJdata]["name"].get<std::string>();
-			mkdir(AmiiboPath.c_str(), 0777);
 			break;
 		}	
 
